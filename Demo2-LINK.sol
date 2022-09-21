@@ -2,7 +2,7 @@
 // CAT (Commodity Asset Token) LINK Contract Demo ver2
 // GOAL: to aggregate prices over Goerli Testnet
 // LINK proxies for testing using BTC, ETH, & DAI in USD
-// Seperate OpenZepplin contract will average prices via SafeMath
+// Seperate OpenZepplin contract will average these prices via SafeMath
 
 
 pragma solidity ^0.6.7;
@@ -82,5 +82,14 @@ contract PriceConsumerV3 {
         return price;
         price = DAI;
     } // end function 3
+
+    /**
+     * Return the average of 3 numbers. The result is rounded toward 0
+     */
+    function average(int BTC, int ETH) public view returns (int) 
+    {
+        return (BTC & ETH & DAI) + (BTC ^ ETH ^ DAI) / 3;
+    }
+    // NOTE: (a + b + c) / 3 can overflow. Where's safemath when you need it,...
 
 } // end contract Demo2 LINK
