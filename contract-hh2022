@@ -43,4 +43,4 @@ contract PriceConsumerV3 {
         ) = priceFeed.latestRoundData();
         return price;
     }
-} // end contract
+} // end contract.
