@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Commodity Contract for Houston Hackathon 2022 
+// Commodity Contract for Chainlink Hackathon 2022 
 // This smart contract is designed to use commodities pricing from off-chain sources 
 // It is using Chainlink commodities aggregation for WTI Oil, Gold, & Silver
 // It is running in Remix over the ETH MainNet
