@@ -4,7 +4,9 @@
 // LINK proxies for testing using BTC, ETH, & DAI in USD
 // Seperate OpenZepplin contract will average these prices via SafeMath
 
-pragma solidity ^0.6.7;
+pragma solidity ^0.8.17;
+
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 contract PriceConsumerV3 {
     AggregatorV3Interface internal priceFeed1;

@@ -5,13 +5,17 @@
 // It is running in Remix over the ETH MainNet
 
 
-pragma solidity ^0.6.7;
+pragma solidity ^0.8.17;
 
-import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+
+
 
 contract PriceConsumerV3 {
 
-    AggregatorV3Interface internal priceFeed;
+    AggregatorV3Interface internal priceFeed_WTI;
+    AggregatorV3Interface internal priceFeed_GOLD;
+    AggregatorV3Interface internal priceFeed_SILVER;
 
     /**
      * Network: ETH Mainnet Required for LINK Commodities
@@ -22,18 +26,18 @@ contract PriceConsumerV3 {
      */
     constructor() public {
         // price feed 1 WTI Oil
-        priceFeed = AggregatorV3Interface(0xf3584F4dd3b467e73C2339EfD008665a70A4185c);
+        priceFeed_WTI = AggregatorV3Interface(0xf3584F4dd3b467e73C2339EfD008665a70A4185c);
         // price feed 2 Gold
-        priceFeed = AggregatorV3Interface(0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6);
+        priceFeed_GOLD = AggregatorV3Interface(0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6);
         // price feed 3 Silver
-        priceFeed = AggregatorV3Interface(0x379589227b15F1a12195D3f2d90bBc9F31f95235);
+        priceFeed_SILVER = AggregatorV3Interface(0x379589227b15F1a12195D3f2d90bBc9F31f95235);
 
     }
     /**
      * Returns the latest price
      * Variable warnings in Remix are fields that popuate from the feed
      */
-    function getLatestPrice() public view returns (int) {
+    function getLatestPrice(string commodityName) public view returns (int) {
         (
             uint80 roundID, 
             int price,

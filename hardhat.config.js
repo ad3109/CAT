@@ -1,6 +1,5 @@
 require("@nomiclabs/hardhat-waffle")
 require("@nomiclabs/hardhat-etherscan")
-require("@chainlink/contracts")
 require("hardhat-deploy")
 require("solidity-coverage")
 require("hardhat-gas-reporter")
