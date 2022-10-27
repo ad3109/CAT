@@ -1,6 +1,6 @@
-// Extremely top heavy contract built at a time when there was no
-// LINK Network. This security model is custom to the Maker
-// Relay Network 
+// AD: This is an extremely top heavy contract built at a time when there was no
+// LINK Network. The DAI security model is custom to the Maker Relay Network.
+// CAT/RWA Draft 1 code review below
 
 // Copyright (C) 2018-2020 Maker Ecosystem Growth Holdings, INC.
 // This program is free software: you can redistribute it and/or modify
@@ -15,9 +15,15 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 pragma solidity >=0.5.10;
-import "ds-value/value.sol";
-contract LibNote {
+// AD: min update >=0.8.0
+
+import "https://github.com/ad3109/commodities1/blob/main/contracts/Gold-feed.sol";
+// import "ds-value/value.sol";
+// AD: value.sol review pending
+
+ contract LibNote {
     event LogNote(
         bytes4   indexed  sig,
         address  indexed  usr,
@@ -28,9 +34,7 @@ contract LibNote {
     modifier note {
         _;
         assembly {
-            // log an 'anonymous' event with a constant 6 words of calldata
-            // and four indexed topics: selector, caller, arg1 and arg2
-            let mark := msize                         // end of memory ensures zero
+ //           let mark := msize                         // end of memory ensures zero
             let mark := msize()                       // end of memory ensures zero
             mstore(0x40, add(mark, 288))              // update free memory pointer
             mstore(mark, 0x20)                        // bytes type data offset
@@ -38,14 +42,15 @@ contract LibNote {
             calldatacopy(add(mark, 0x40), 0, 224)     // bytes payload
             log4(mark, 288,                           // calldata
                  shl(224, shr(224, calldataload(0))), // msg.sig
-                 caller,                              // msg.sender
+ //                caller,                              // msg.sender
                  caller(),                            // msg.sender
-                 calldataload(4),                     // arg1
-                 calldataload(36)                     // arg2
+                calldataload(4),                     // arg1
+                calldataload(36)                     // arg2
                 )
         }
     }
-}
+ }
+
 contract OSM is LibNote {
     // --- Auth ---
     mapping (address => uint) public wards;
@@ -55,14 +60,18 @@ contract OSM is LibNote {
         require(wards[msg.sender] == 1, "OSM/not-authorized");
         _;
     }
+    
     // --- Stop ---
     uint256 public stopped;
     modifier stoppable { require(stopped == 0, "OSM/is-stopped"); _; }
+    
     // --- Math ---
     function add(uint64 x, uint64 y) internal pure returns (uint64 z) {
         z = x + y;
         require(z >= x);
     }
+    // AD: This math won't survive a modern audit
+    
     address public src;
     uint16  constant ONE_HOUR = uint16(3600);
     uint16  public hop = ONE_HOUR;
@@ -74,6 +83,7 @@ contract OSM is LibNote {
     Feed cur;
     Feed nxt;
     // Whitelisted contracts, set by an auth
+    
     mapping (address => uint256) public bud;
     
     modifier toll { require(bud[msg.sender] == 1, "OSM/contract-not-whitelisted"); _; }
@@ -109,15 +119,17 @@ contract OSM is LibNote {
  function pass() public view returns (bool ok) {
         return era() >= add(zzz, hop);
     }
-    function poke() external note stoppable {
-        require(pass(), "OSM/not-passed");
-        (bytes32 wut, bool ok) = DSValue(src).peek();
-        if (ok) {
-            cur = nxt;
-            nxt = Feed(uint128(uint(wut)), 1);
-            zzz = prev(era());
-            emit LogValue(bytes32(uint(cur.val)));
-        }
+ /**   function poke() external note stoppable {
+ *       require(pass(), "OSM/not-passed");
+ *       (bytes32 wut, bool ok) = DSValue(src).peek();
+ *       if (ok) {
+ *           cur = nxt;
+ *           nxt = Feed(uint128(uint(wut)), 1);
+ *           zzz = prev(era());
+ *           emit LogValue(bytes32(uint(cur.val)));
+ *       }
+ * poke is a Maker token feature
+ */ 
     }
     function peek() external view toll returns (bytes32,bool) {
         return (bytes32(uint(cur.val)), cur.has == 1);
