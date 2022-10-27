@@ -60,6 +60,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         args: goldargs,
         log: true,
     })
+    console.log("Deployed goldVault")
 
     //deploy silver vault
     const silverargs = [
@@ -74,19 +75,21 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         args: silverargs,
         log: true,
     })
+    console.log("Deployed silverVault")
 
-    const oilargs = [
+    const wtiargs = [
         "wti",
         "WTI",
         WTI_USD_PriceFeedAddress,
         BTC_USD_PriceFeedAddress,
         ETH_USD_PriceFeedaddress,
     ]
-    const oilVault = await deploy("Vault", {
+    const wtiVault = await deploy("Vault", {
         from: deployer,
-        args: oilargs,
+        args: wtiargs,
         log: true,
     })
+    console.log("Deployed witVault")
 
     const lumberargs = [
         "lumber",
@@ -100,6 +103,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         args: lumberargs,
         log: true,
     })
+    console.log("Deployed lumberVault")
 
     const wheatargs = [
         "wheat",
@@ -113,6 +117,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         args: wheatargs,
         log: true,
     })
+    console.log("Deployed wheatVault")
 
     /*if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
         await verify(goldVault.address, args)
