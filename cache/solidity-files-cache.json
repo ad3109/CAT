@@ -88,8 +88,8 @@
       ]
     },
     "C:\\Users\\32479\\web3-projects\\commodities1\\contracts\\Loan.sol": {
-      "lastModificationDate": 1666862006584,
-      "contentHash": "87753a145d50b5ed7af1cac7b881e878",
+      "lastModificationDate": 1666871032559,
+      "contentHash": "bfc938b9fe5600634803638ceaf3934f",
       "sourceName": "contracts/Loan.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -130,8 +130,8 @@
       ]
     },
     "C:\\Users\\32479\\web3-projects\\commodities1\\contracts\\Vault.sol": {
-      "lastModificationDate": 1666864747933,
-      "contentHash": "1b409f03c0d985be3d0633a181142eac",
+      "lastModificationDate": 1666872450973,
+      "contentHash": "4db1ea40c6cd77213f8b5d25db644668",
       "sourceName": "contracts/Vault.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -434,6 +434,223 @@
       ],
       "artifacts": [
         "PriceConsumerV3"
+      ]
+    },
+    "C:\\Users\\32479\\web3-projects\\commodities1\\node_modules\\@chainlink\\contracts\\src\\v0.8\\interfaces\\AggregatorV2V3Interface.sol": {
+      "lastModificationDate": 1666447903110,
+      "contentHash": "8634be6a1c8b65b4c0bfd6d1fa765e72",
+      "sourceName": "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "./AggregatorInterface.sol",
+        "./AggregatorV3Interface.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "AggregatorV2V3Interface"
+      ]
+    },
+    "C:\\Users\\32479\\web3-projects\\commodities1\\node_modules\\@chainlink\\contracts\\src\\v0.8\\interfaces\\AggregatorInterface.sol": {
+      "lastModificationDate": 1666447903107,
+      "contentHash": "f00f7f6071813249ee968d1114635a81",
+      "sourceName": "@chainlink/contracts/src/v0.8/interfaces/AggregatorInterface.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "AggregatorInterface"
+      ]
+    },
+    "C:\\Users\\32479\\web3-projects\\commodities1\\node_modules\\@chainlink\\contracts\\src\\v0.8\\tests\\MockV3Aggregator.sol": {
+      "lastModificationDate": 1666447903221,
+      "contentHash": "1ac94788dae0d2659a63a13860d04244",
+      "sourceName": "@chainlink/contracts/src/v0.8/tests/MockV3Aggregator.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "../interfaces/AggregatorV2V3Interface.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "MockV3Aggregator"
+      ]
+    },
+    "C:\\Users\\32479\\web3-projects\\commodities1\\contracts\\test\\MockV3Aggregator.sol": {
+      "lastModificationDate": 1666870642764,
+      "contentHash": "4402bf664e7d97a9398f2924c8baf541",
+      "sourceName": "contracts/test/MockV3Aggregator.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "@chainlink/contracts/src/v0.8/tests/MockV3Aggregator.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": []
+    },
+    "C:\\Users\\32479\\web3-projects\\commodities1\\contracts\\Gold-feed.sol": {
+      "lastModificationDate": 1666867296361,
+      "contentHash": "6995d104037f4807e825d5fc8fb8babe",
+      "sourceName": "contracts/Gold-feed.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.1"
+      ],
+      "artifacts": [
+        "GoldPriceFeed"
       ]
     }
   }

@@ -7,7 +7,6 @@ pragma solidity ^0.8.1;
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 contract GoldPriceFeed {
-
     AggregatorV3Interface internal priceFeed;
 
     /**
@@ -23,12 +22,12 @@ contract GoldPriceFeed {
      * Return the latest gold price
      */
 
-    function getLatestPriceGold() public view returns (int) {
+    function getLatestPriceGold() public view returns (int256) {
         (
-            uint80 roundID, 
-            int price,
-            uint startedAt,
-            uint timeStamp,
+            uint80 roundID,
+            int256 price,
+            uint256 startedAt,
+            uint256 timeStamp,
             uint80 answeredInRound
         ) = priceFeed.latestRoundData();
         return price;
