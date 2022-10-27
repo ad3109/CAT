@@ -48,4 +48,16 @@ contract Vault {
     function getToken() public view returns (CAT) {
         return i_token;
     }
+
+    function getPriceFeed() public view returns (address) {
+        return i_priceFeedAddress;
+    }
+
+    function getBTCPriceFeed() public view returns (address) {
+        return i_btcPriceFeedAddress;
+    }
+
+    function getETHPriceFeed() public view returns (address) {
+        return i_ethPriceFeedAddress;
+    }
 }

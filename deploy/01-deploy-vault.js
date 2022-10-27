@@ -55,7 +55,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         BTC_USD_PriceFeedAddress,
         ETH_USD_PriceFeedaddress,
     ]
-    const goldVault = await deploy("Vault", {
+    const goldVault = await deploy("goldVault", {
+        contract: "Vault",
         from: deployer,
         args: goldargs,
         log: true,
@@ -70,7 +71,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         BTC_USD_PriceFeedAddress,
         ETH_USD_PriceFeedaddress,
     ]
-    const silverVault = await deploy("Vault", {
+    const silverVault = await deploy("silverVault", {
+        contract: "Vault",
         from: deployer,
         args: silverargs,
         log: true,
@@ -84,12 +86,13 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         BTC_USD_PriceFeedAddress,
         ETH_USD_PriceFeedaddress,
     ]
-    const wtiVault = await deploy("Vault", {
+    const wtiVault = await deploy("wtiVault", {
+        contract: "Vault",
         from: deployer,
         args: wtiargs,
         log: true,
     })
-    console.log("Deployed witVault")
+    console.log("Deployed wtiVault")
 
     const lumberargs = [
         "lumber",
@@ -98,7 +101,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         BTC_USD_PriceFeedAddress,
         ETH_USD_PriceFeedaddress,
     ]
-    const lumberVault = await deploy("Vault", {
+    const lumberVault = await deploy("lumberVault", {
+        contract: "Vault",
         from: deployer,
         args: lumberargs,
         log: true,
@@ -112,7 +116,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         BTC_USD_PriceFeedAddress,
         ETH_USD_PriceFeedaddress,
     ]
-    const wheatVault = await deploy("Vault", {
+    const wheatVault = await deploy("wheatVault", {
+        contract: "Vault",
         from: deployer,
         args: wheatargs,
         log: true,
