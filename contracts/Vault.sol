@@ -6,7 +6,16 @@ pragma solidity ^0.8.17;
 
 import "./CAT.sol";
 
+error Vault__NotOwner();
+error Vault__CollateralNotAllowed();
+
+/**@title  the main vault contract
+ * @author Reginald Dewil
+ * @notice users can deposit collateral into the contract and mint a Commodity Asset Token against this collateral. This contract uses chainlink price feeds for determinining both the prices of the CAT and the collateral.
+ */
 contract Vault {
+    // State variables
+    address private immutable i_owner; //multi-sig address and will be changeable in later versions through DAO decisions
     string public s_vaultName;
     CAT private immutable i_token;
     address private immutable i_priceFeedAddress;
@@ -18,6 +27,14 @@ contract Vault {
 
     //mapping(address => Loan) private s_addressesToLoans; //the list of outstanding loans
 
+    // Events
+
+    // Modifiers
+    modifier onlyOwner() {
+        if (msg.sender != i_owner) revert Vault__NotOwner();
+        _;
+    }
+
     constructor(
         string memory name,
         string memory symbol,
@@ -25,8 +42,9 @@ contract Vault {
         address btcPriceFeedAddress,
         address ethPriceFeedAddress
     ) {
+        i_owner = msg.sender;
         s_vaultName = name;
-        i_token = new CAT(0, name, symbol); //ERC20
+        i_token = new CAT(name, symbol); //ERC20
         i_priceFeedAddress = priceFeedAddress;
         i_btcPriceFeedAddress = btcPriceFeedAddress;
         i_ethPriceFeedAddress = ethPriceFeedAddress;
@@ -45,6 +63,17 @@ contract Vault {
         i_token._mintCAT(msg.sender, toBorrowAmount);
 
         //3. update Loan object
+    }
+
+    function addCollateral() public {}
+
+    //sending eth or other tokens will attempt to use the addCollateral function
+    receive() external payable {
+        addCollateral();
+    }
+
+    fallback() external payable {
+        addCollateral();
     }
 
     function getToken() public view returns (CAT) {
