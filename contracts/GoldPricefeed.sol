@@ -14,7 +14,7 @@ contract GoldPriceFeed {
      * Aggregator1: Gold XAU/USD
      * Address: 0x7b219F57a8e9C7303204Af681e9fA69d17ef626f
      */
-    constructor() public {
+    constructor() {
         priceFeed = AggregatorV3Interface(0x7b219F57a8e9C7303204Af681e9fA69d17ef626f);
     }
 
