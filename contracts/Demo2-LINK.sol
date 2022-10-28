@@ -69,14 +69,17 @@ contract PriceConsumerV3 {
 
     function getLatestPrice3() public view returns (int256) {
         (
-            uint80 roundID,
+            ,
+            /*uint80 roundID*/
             int256 price,
-            uint256 startedAt,
-            uint256 timeStamp,
-            uint80 answeredInRound
-        ) = priceFeed3.latestRoundData();
-        return price;
-        price = DAI;
+            ,
+            ,
+
+        ) = /*uint256 startedAt*/
+            /*uint256 timeStamp*/
+            /*uint80 answeredInRound*/
+            priceFeed3.latestRoundData();
+        return price; //price = DAI;
     } // end function 3
 
     /**

@@ -1,10 +1,14 @@
 node_modules
 .env
+coverage
+coverage.json
 
-
-#hardhat files
+deployments
+archive
 cache
 artifacts
 .DS_Store
 gas-report.txt
-deployments
+
+
+yarn.error.log
