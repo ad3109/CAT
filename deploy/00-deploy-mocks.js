@@ -4,6 +4,7 @@ const {
     DECIMALS,
     INITIAL_ANSWER_MOCK_BTC_USD,
     INITIAL_ANSWER_MOCK_ETH_USD,
+    INITIAL_ANSWER_MOCK_LINK_USD,
     INITIAL_ANSWER_MOCK_WTI_USD,
     INITIAL_ANSWER_MOCK_GLD_USD,
     INITIAL_ANSWER_MOCK_SLV_USD,
@@ -28,6 +29,12 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
             from: deployer,
             log: true,
             args: [DECIMALS, INITIAL_ANSWER_MOCK_ETH_USD],
+        })
+        await deploy("MockV3AggregatorLINK", {
+            contract: "MockV3Aggregator",
+            from: deployer,
+            log: true,
+            args: [DECIMALS, INITIAL_ANSWER_MOCK_LINK_USD],
         })
         await deploy("MockV3AggregatorWTI", {
             contract: "MockV3Aggregator",
@@ -58,6 +65,18 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
             from: deployer,
             log: true,
             args: [DECIMALS, INITIAL_ANSWER_MOCK_WHEAT_USD],
+        })
+        await deploy("MockWBTC", {
+            contract: "MockToken",
+            from: deployer,
+            log: true,
+            args: ["WBC", "WBTC"],
+        })
+        await deploy("MockLINK", {
+            contract: "MockToken",
+            from: deployer,
+            log: true,
+            args: ["Chainlink", "LINK"],
         })
         log("Mocks deployed!")
         log("-----------------------------------------------")

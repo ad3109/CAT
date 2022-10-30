@@ -17,6 +17,7 @@ const { Contract } = require("ethers")
               mockV3AggregatorBTC = await ethers.getContract("MockV3AggregatorBTC")
               mockV3AggregatorETH = await ethers.getContract("MockV3AggregatorETH")
               mockV3AggregatorGLD = await ethers.getContract("MockV3AggregatorGLD")
+              mockWBTC = await ethers.getContract("MockWBTC")
           })
 
           describe("constructor", function () {
@@ -28,10 +29,44 @@ const { Contract } = require("ethers")
               it("sets the aggregator addresses correctly", async () => {
                   let response = await goldVault.getPriceFeed()
                   assert.equal(response, mockV3AggregatorGLD.address)
-                  response = await goldVault.getBTCPriceFeed()
-                  assert.equal(response, mockV3AggregatorBTC.address)
-                  response = await goldVault.getETHPriceFeed()
+
+                  response = await goldVault.getEthPriceFeed()
+
                   assert.equal(response, mockV3AggregatorETH.address)
+
+                  const allowedCollateral = await goldVault.getAllowedCollateral()
+                  response = await goldVault.isAllowedCollateral(mockWBTC.address)
+                  assert.isTrue(response)
+
+                  response = await goldVault.get
               })
+          })
+
+          describe("addCollateral", function () {
+              it("successfully adds allowed collateral", async () => {})
+              it("reverts when adding not-allowed collateral", async () => {})
+          })
+
+          describe("withdrawCollateral", function () {
+              it("successfully withraws existing collateral", async () => {})
+              it("reverts when attempting to withdraw invalid collateral type", async () => {})
+              it("reverts when attempting to withdraw too much collateral", async () => {})
+          })
+
+          describe("borrow", function () {
+              it("borrow/mint only when sufficient collateral is available", async () => {})
+              it("reverts if insufccient collateral is available for asked borrowAmount", async () => {})
+          })
+
+          describe("repayLoan", function () {
+              it("succesfully reduces borrowed amount after repay", async () => {})
+              it("revert when attempting repay with different token", async () => {})
+              it("refund excess when repaying more than borrowed amount", async () => {})
+          })
+
+          describe("fallback", function () {})
+
+          describe("receive", function () {
+              it("successfully adds eth as collateral for sender", async () => {})
           })
       })

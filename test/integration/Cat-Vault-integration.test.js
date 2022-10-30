@@ -22,7 +22,7 @@ const { Contract } = require("ethers")
               it("initial supply equal to zero", async () => {
                   const contractAddress = await lumberVault.getToken()
                   const contract = await ethers.getContractAt("CAT", contractAddress)
-                  const supply = contract.totalSupply()
+                  const supply = await contract.totalSupply()
                   assert(supply, 0)
               })
           })

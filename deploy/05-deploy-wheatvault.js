@@ -8,7 +8,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const chainId = network.config.chainId
 
     //set price feed addresses correctly depending on network
-    let ETH_USD_PriceFeedaddress, BTC_USD_PriceFeedAddress, WHEAT_USD_PriceFeedAddress
+    let ETH_USD_PriceFeedaddress, BTC_USD_PriceFeedAddress, WHEAT_USD_PriceFeedAddress, WBTC
 
     if (developmentChains.includes(network.name)) {
         const BTC_USDAggregator = await deployments.get("MockV3AggregatorBTC")
@@ -19,18 +19,22 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
         const WHEAT_USDAggregator = await deployments.get("MockV3AggregatorWHEAT")
         WHEAT_USD_PriceFeedAddress = WHEAT_USDAggregator.address
+        WBTC = (await deployments.get("MockWBTC")).address
     } else {
         BTC_USD_PriceFeedAddress = networkConfig[chainId]["btcUsdPriceFeed"]
         ETH_USD_PriceFeedaddress = networkConfig[chainId]["ethUsdPriceFeed"]
         WHEAT_USD_PriceFeedAddress = networkConfig[chainId]["wheatUsdPriceFeed"]
+        WBTC = networkConfig[chainId]["wbtc"]
     }
 
     const wheatargs = [
         "wheat",
         "WHEAT",
         WHEAT_USD_PriceFeedAddress,
-        BTC_USD_PriceFeedAddress,
         ETH_USD_PriceFeedaddress,
+        [WBTC],
+        [BTC_USD_PriceFeedAddress],
+        15000000000,
     ]
     const wheatVault = await deploy("wheatVault", {
         contract: "Vault",

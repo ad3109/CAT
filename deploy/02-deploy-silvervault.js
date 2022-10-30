@@ -8,7 +8,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const chainId = network.config.chainId
 
     //set price feed addresses correctly depending on network
-    let ETH_USD_PriceFeedaddress, BTC_USD_PriceFeedAddress, SLV_USD_PriceFeedAddress
+    let ETH_USD_PriceFeedaddress, BTC_USD_PriceFeedAddress, SLV_USD_PriceFeedAddress, WBTC
 
     if (developmentChains.includes(network.name)) {
         const BTC_USDAggregator = await deployments.get("MockV3AggregatorBTC")
@@ -19,10 +19,12 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
         const SLV_USDAggregator = await deployments.get("MockV3AggregatorSLV")
         SLV_USD_PriceFeedAddress = SLV_USDAggregator.address
+        WBTC = (await deployments.get("MockWBTC")).address
     } else {
         BTC_USD_PriceFeedAddress = networkConfig[chainId]["btcUsdPriceFeed"]
         ETH_USD_PriceFeedaddress = networkConfig[chainId]["ethUsdPriceFeed"]
         SLV_USD_PriceFeedAddress = networkConfig[chainId]["silverUsdPriceFeed"]
+        WBTC = networkConfig[chainId]["wbtc"]
     }
 
     //deploy silver vault
@@ -30,8 +32,10 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         "silver",
         "SLV",
         SLV_USD_PriceFeedAddress,
-        BTC_USD_PriceFeedAddress,
         ETH_USD_PriceFeedaddress,
+        [WBTC],
+        [BTC_USD_PriceFeedAddress],
+        15000000000,
     ]
     const silverVault = await deploy("silverVault", {
         contract: "Vault",

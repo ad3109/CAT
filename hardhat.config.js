@@ -19,7 +19,7 @@ module.exports = {
     networks: {
         hardhat: {
             chainId: 31337,
-            // gasPrice: 130000000000,
+            gasPrice: 130000000000,
         },
         goerli: {
             url: GOERLI_RPC_URL,

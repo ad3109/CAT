@@ -8,7 +8,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const chainId = network.config.chainId
 
     //set price feed addresses correctly depending on network
-    let ETH_USD_PriceFeedaddress, BTC_USD_PriceFeedAddress, GLD_USD_PriceFeedAddress
+    let ETH_USD_PriceFeedaddress, BTC_USD_PriceFeedAddress, GLD_USD_PriceFeedAddress, WBTC
 
     if (developmentChains.includes(network.name)) {
         const BTC_USDAggregator = await deployments.get("MockV3AggregatorBTC")
@@ -19,10 +19,13 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
         const GLD_USDAggregator = await deployments.get("MockV3AggregatorGLD")
         GLD_USD_PriceFeedAddress = GLD_USDAggregator.address
+
+        WBTC = (await deployments.get("MockWBTC")).address
     } else {
         BTC_USD_PriceFeedAddress = networkConfig[chainId]["btcUsdPriceFeed"]
         ETH_USD_PriceFeedaddress = networkConfig[chainId]["ethUsdPriceFeed"]
         GLD_USD_PriceFeedAddress = networkConfig[chainId]["goldUsdPriceFeed"]
+        WBTC = networkConfig[chainId]["wbtc"]
     }
 
     //deploy gold vault
@@ -30,8 +33,10 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         "gold",
         "GLD",
         GLD_USD_PriceFeedAddress,
-        BTC_USD_PriceFeedAddress,
         ETH_USD_PriceFeedaddress,
+        [WBTC],
+        [BTC_USD_PriceFeedAddress],
+        15000000000,
     ]
     const goldVault = await deploy("goldVault", {
         contract: "Vault",
