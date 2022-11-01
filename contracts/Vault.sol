@@ -112,4 +112,8 @@ contract Vault {
     function getPriceFeedOfCollateral(address collateralAddress) public view returns (address) {
         return s_collateralPriceFeedsByAddress[collateralAddress];
     }
+
+    function getCollateralAmountUsd(address borrower) internal returns (uint256) {
+        //TODO
+    }
 }

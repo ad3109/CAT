@@ -39,5 +39,14 @@ module.exports = {
         deployer: {
             default: 0,
         },
+        borrower: {
+            default: 1,
+        },
+        liquidator: {
+            default: 2,
+        },
+        otherBorrower: {
+            default: 3,
+        },
     },
 }
