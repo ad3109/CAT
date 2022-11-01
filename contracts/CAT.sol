@@ -17,6 +17,8 @@ contract CAT is ERC20 {
 
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {
         i_owner = msg.sender;
+        // CAT1 demo is _mint(msg.sender, 1000);
+        // contract address: 0xd3249B4230e3218D9f3509d3ADff089718c5eE50
     }
 
     function _mintCAT(address receivingAddress, uint256 amount) public {
