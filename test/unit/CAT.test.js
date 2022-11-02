@@ -1,19 +1,19 @@
 const { ethers } = require("hardhat")
 const { assert, expect } = require("chai")
 
-describe("Token contract", function () {
+describe("CAT contract", function () {
     let CAT, owner
     beforeEach(async () => {
         owner = await ethers.getSigners()[0]
         const CATFactory = await ethers.getContractFactory("CAT")
-        CAT = await CATFactory.deploy("Oil", "WTI")
+        CAT = await CATFactory.deploy("Oil", "WTIOIL")
     })
     describe("constructor", function () {
         it("token name and symbol set correctly", async function () {
             const nameResponse = await CAT.name()
             const symbolResponse = await CAT.symbol()
             assert.equal(nameResponse, "Oil")
-            assert.equal(symbolResponse, "WTI")
+            assert.equal(symbolResponse, "WTIOIL")
         })
         it("supply is zero after construction", async function () {
             const response = await CAT.totalSupply()

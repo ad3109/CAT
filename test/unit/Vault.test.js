@@ -10,17 +10,20 @@ const { Contract } = require("ethers")
           let borrower, liquidator, otherBorrower
 
           beforeEach(async () => {
-              await deployments.fixture(["mocks", "gold"])
+              await deployments.fixture(["mocks", "vaults"])
               deployer = (await getNamedAccounts()).deployer
               borrower = (await getNamedAccounts()).borrower
               otherBorrower = (await getNamedAccounts()).otherBorrower
               liquidator = (await getNamedAccounts()).liquidator
-              goldVault = await ethers.getContract("goldVault")
+              goldVault = await ethers.getContract("XAU_vault")
 
               mockV3AggregatorBTC = await ethers.getContract("MockV3AggregatorBTC")
               mockV3AggregatorETH = await ethers.getContract("MockV3AggregatorETH")
-              mockV3AggregatorGLD = await ethers.getContract("MockV3AggregatorGLD")
-              mockWBTC = await ethers.getContract("MockWBTC")
+              mockV3AggregatorLINK = await ethers.getContract("MockV3AggregatorLINK")
+              mockV3AggregatorGLD = await ethers.getContract("MockV3Aggregator_XAU")
+              mockWBTC = await ethers.getContract("MockBTC")
+              mockWETH = await ethers.getContract("MockWETH")
+              mockLINK = await ethers.getContract("MockLINK")
           })
 
           describe("constructor", function () {
@@ -30,18 +33,29 @@ const { Contract } = require("ethers")
               })
 
               it("sets the aggregator addresses correctly", async () => {
-                  let response = await goldVault.getPriceFeed()
+                  let response = await goldVault.s_catPriceFeedAddress()
                   assert.equal(response, mockV3AggregatorGLD.address)
 
-                  response = await goldVault.getEthPriceFeed()
-
-                  assert.equal(response, mockV3AggregatorETH.address)
-
-                  const allowedCollateral = await goldVault.getAllowedCollateral()
-                  response = await goldVault.isAllowedCollateral(mockWBTC.address)
-                  assert.isTrue(response)
-
-                  response = await goldVault.get
+                  assert.isTrue(await goldVault.isAllowedCollateral(mockWETH.address))
+                  assert.isTrue(await goldVault.isAllowedCollateral(mockWBTC.address))
+                  assert.isTrue(await goldVault.isAllowedCollateral(mockLINK.address))
+                  assert.isFalse(
+                      await goldVault.isAllowedCollateral(
+                          "0x4aeceb6486d25d5015bf8f8323914a36204ed4b7"
+                      )
+                  )
+                  assert.strictEqual(
+                      await goldVault.s_tokenAddressToPriceFeed[mockWETH.address],
+                      mockV3AggregatorETH.address
+                  )
+                  assert.strictEqual(
+                      await goldVault.s_tokenAddressToPriceFeed[mockBTC.address],
+                      mockV3AggregatorBTC.address
+                  )
+                  assert.strictEqual(
+                      await goldVault.s_tokenAddressToPriceFeed[mockLINK.address],
+                      mockV3AggregatorLINK.address
+                  )
               })
           })
 
@@ -64,6 +78,15 @@ const { Contract } = require("ethers")
               it("borrow/mint only when sufficient collateral is available for the borrowing account", async () => {})
               it("reverts if insufficient collateral is available for asked borrowAmount and user", async () => {})
           })
+
+          describe("getAccountInformation", function () {
+              it("returns zero if user does not have collateral at contract", async () => {})
+              it("returns correct value if user does have a position at contract", async () => {})
+          })
+
+          describe("addCollateralAndMintCAT", function () {})
+
+          describe("repayCATAndWithdrawCollateral", function () {})
 
           describe("repayLoan", function () {
               it("succesfully reduces borrowed amount after repay", async () => {})

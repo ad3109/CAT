@@ -2,26 +2,35 @@
 
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-error CAT__NotOwner();
+error CAT__AmountMustBeMoreThanZero();
+error CAT__BurnAmountExceedsBalance();
+error CAT__NotZeroAddress();
 
-contract CAT is ERC20 {
-    address private immutable i_owner;
+contract CAT is ERC20Burnable, Ownable {
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
 
-    // Modifiers
-    modifier onlyOwner() {
-        if (msg.sender != i_owner) revert CAT__NotOwner();
-        _;
+    function burn(uint256 _amount) public override onlyOwner {
+        uint256 balance = balanceOf(msg.sender);
+        if (_amount <= 0) {
+            revert CAT__AmountMustBeMoreThanZero();
+        }
+        if (balance < _amount) {
+            revert CAT__BurnAmountExceedsBalance();
+        }
+        super.burn(_amount);
     }
 
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
-        i_owner = msg.sender;
-        // CAT1 demo is _mint(msg.sender, 1000);
-        // contract address: 0xd3249B4230e3218D9f3509d3ADff089718c5eE50
-    }
-
-    function _mintCAT(address receivingAddress, uint256 amount) public {
-        _mint(receivingAddress, amount);
+    function mint(address _to, uint256 _amount) external onlyOwner returns (bool) {
+        if (_to == address(0)) {
+            revert CAT__NotZeroAddress();
+        }
+        if (_amount <= 0) {
+            revert CAT__AmountMustBeMoreThanZero();
+        }
+        _mint(_to, _amount);
+        return true;
     }
 }

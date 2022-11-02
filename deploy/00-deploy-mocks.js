@@ -2,14 +2,8 @@ const { network } = require("hardhat")
 const {
     developmentChains,
     DECIMALS,
-    INITIAL_ANSWER_MOCK_BTC_USD,
-    INITIAL_ANSWER_MOCK_ETH_USD,
-    INITIAL_ANSWER_MOCK_LINK_USD,
-    INITIAL_ANSWER_MOCK_WTI_USD,
-    INITIAL_ANSWER_MOCK_GLD_USD,
-    INITIAL_ANSWER_MOCK_SLV_USD,
-    INITIAL_ANSWER_MOCK_LBS_USD,
-    INITIAL_ANSWER_MOCK_WHEAT_USD,
+    commodities,
+    initial_answer_prices_mocks,
 } = require("../helper-hardhat-config")
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
@@ -18,59 +12,51 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
     if (developmentChains.includes(network.name)) {
         log("Local network detected! Deploying mocks...")
+
+        //deploy BTC, ETH, and LINK price feeds
         await deploy("MockV3AggregatorBTC", {
             contract: "MockV3Aggregator",
             from: deployer,
             log: true,
-            args: [DECIMALS, INITIAL_ANSWER_MOCK_BTC_USD],
+            args: [DECIMALS, initial_answer_prices_mocks["BTC"]],
         })
         await deploy("MockV3AggregatorETH", {
             contract: "MockV3Aggregator",
             from: deployer,
             log: true,
-            args: [DECIMALS, INITIAL_ANSWER_MOCK_ETH_USD],
+            args: [DECIMALS, initial_answer_prices_mocks["ETH"]],
         })
         await deploy("MockV3AggregatorLINK", {
             contract: "MockV3Aggregator",
             from: deployer,
             log: true,
-            args: [DECIMALS, INITIAL_ANSWER_MOCK_LINK_USD],
+            args: [DECIMALS, initial_answer_prices_mocks["LINK"]],
         })
-        await deploy("MockV3AggregatorWTI", {
-            contract: "MockV3Aggregator",
-            from: deployer,
-            log: true,
-            args: [DECIMALS, INITIAL_ANSWER_MOCK_WTI_USD],
-        })
-        await deploy("MockV3AggregatorGLD", {
-            contract: "MockV3Aggregator",
-            from: deployer,
-            log: true,
-            args: [DECIMALS, INITIAL_ANSWER_MOCK_GLD_USD],
-        })
-        await deploy("MockV3AggregatorSLV", {
-            contract: "MockV3Aggregator",
-            from: deployer,
-            log: true,
-            args: [DECIMALS, INITIAL_ANSWER_MOCK_SLV_USD],
-        })
-        await deploy("MockV3AggregatorLBS", {
-            contract: "MockV3Aggregator",
-            from: deployer,
-            log: true,
-            args: [DECIMALS, INITIAL_ANSWER_MOCK_LBS_USD],
-        })
-        await deploy("MockV3AggregatorWHEAT", {
-            contract: "MockV3Aggregator",
-            from: deployer,
-            log: true,
-            args: [DECIMALS, INITIAL_ANSWER_MOCK_WHEAT_USD],
-        })
-        await deploy("MockWBTC", {
+
+        //deploy commodities
+        for (let i = 0; i < commodities.length; i++) {
+            let commodityName = commodities[i]
+            let str = "MockV3Aggregator_" + commodityName
+            await deploy(str, {
+                contract: "MockV3Aggregator",
+                from: deployer,
+                log: true,
+                args: [DECIMALS, initial_answer_prices_mocks[commodityName]],
+            })
+        }
+
+        //deploy mock BTC and LINK contracts
+        await deploy("MockBTC", {
             contract: "MockToken",
             from: deployer,
             log: true,
-            args: ["WBC", "WBTC"],
+            args: ["Bitcoin", "BTC"],
+        })
+        await deploy("MockWETH", {
+            contract: "MockToken",
+            from: deployer,
+            log: true,
+            args: ["WETH", "WETH"],
         })
         await deploy("MockLINK", {
             contract: "MockToken",

@@ -1,41 +1,52 @@
-//SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+// SPDX-License-Identifier: MIT
 
-/*  This is a generic vault where a set of loans are held
-    Loans are  */
+pragma solidity ^0.8.7;
 
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./CAT.sol";
+import "hardhat/console.sol";
 
-error Vault__NotOwner();
-error Vault__CollateralNotAllowed();
+error Vault__TokenAddressesAndPriceFeedAddressesAmountsDontMatch();
+error Vault__NeedsMoreThanZero();
+error Vault__TokenNotAllowed(address token);
+error Vault__TransferFailed();
+error Vault__BreaksHealthFactor();
+error Vault__MintFailed();
+error Vault__MustBreaksHealthFactor();
+error Vault__HealthFactorOk();
 
-/**@title  the main vault contract
- * @author Reginald Dewil
- * @notice users can deposit collateral into the contract and mint a Commodity Asset Token against this collateral. This contract uses chainlink price feeds for determinining both the prices of the CAT and the collateral.
- *         TODO: contract should be improved by using WETH as collateral instead of ETH, when ETH is sent or deposited, should be autoconverted to WETH
- *               => allows for uniform handling of collateral
- */
-contract Vault {
-    // State variables
-    address private immutable i_owner; //multi-sig address and will be changeable in later versions through DAO decisions
-    string private s_vaultName;
-    CAT private immutable i_token;
-    uint256 private s_mimimalCollateralLevel; //percentage rate, 8 decimals
+contract Vault is ReentrancyGuard, Ownable {
+    string public s_vaultName;
+    CAT public immutable i_token;
 
-    address private s_catPriceFeedAddress;
-    address private s_ethUsdPriceFeed;
-    address[] private s_allowedCollateral;
-    mapping(address => address) private s_collateralPriceFeedsByAddress;
+    uint256 public immutable i_collateral_weight; //8 decimals depending on historic asset volatility, more or less collateral is required to secure a position. 67% weight implies together with minimum health-level that 150% collateral is required for a given mint position
+    uint256 public constant MIN_HEALTH_FACTOR = 1e18; //
+    uint256 public constant LIQUIDATION_DISCOUNT = 10; //10% discount when liquidating
 
-    address[] private s_borrowers; //list of borrowing addresses
-    //mapping(address => address)
-    //mapping(address => ) private s_addressesToLoans; //the list of outstanding loans
+    address public s_catPriceFeedAddress;
+    mapping(address => address) public s_tokenAddressToPriceFeed;
+    // user -> token -> amount
+    mapping(address => mapping(address => uint256)) public s_userToTokenAddressToAmountDeposited;
+    // user -> amount
+    mapping(address => uint256) public s_userToCATMinted;
 
-    // Events
+    address[] public s_collateralTokens;
 
-    // Modifiers
-    modifier onlyOwner() {
-        if (msg.sender != i_owner) revert Vault__NotOwner();
+    event CollateralDeposited(address indexed user, uint256 indexed amount);
+
+    modifier moreThanZero(uint256 amount) {
+        if (amount == 0) {
+            revert Vault__NeedsMoreThanZero();
+        }
+        _;
+    }
+
+    modifier isAllowedToken(address token) {
+        if (s_tokenAddressToPriceFeed[token] == address(0)) {
+            revert Vault__TokenNotAllowed(token);
+        }
         _;
     }
 
@@ -43,77 +54,208 @@ contract Vault {
         string memory name,
         string memory symbol,
         address catPriceFeedAddress,
-        address ethUsdPriceFeed,
         address[] memory allowedCollateralAddresses,
         address[] memory priceFeedsCollateral,
-        uint256 minimalCollateralLevel
+        uint256 collateral_weight
     ) {
-        i_owner = msg.sender;
-        s_vaultName = name;
-        i_token = new CAT(name, symbol); //ERC20
-        s_catPriceFeedAddress = catPriceFeedAddress;
-        s_ethUsdPriceFeed = ethUsdPriceFeed;
-        s_allowedCollateral = allowedCollateralAddresses;
-        for (uint256 i = 0; i < allowedCollateralAddresses.length; i++) {
-            s_collateralPriceFeedsByAddress[allowedCollateralAddresses[i]] = priceFeedsCollateral[
-                i
-            ];
+        if (allowedCollateralAddresses.length != priceFeedsCollateral.length) {
+            revert Vault__TokenAddressesAndPriceFeedAddressesAmountsDontMatch();
         }
-        s_mimimalCollateralLevel = minimalCollateralLevel;
+        for (uint256 i = 0; i < allowedCollateralAddresses.length; i++) {
+            s_tokenAddressToPriceFeed[allowedCollateralAddresses[i]] = priceFeedsCollateral[i];
+            s_collateralTokens.push(allowedCollateralAddresses[i]);
+        }
+        s_catPriceFeedAddress = catPriceFeedAddress;
+        i_collateral_weight = collateral_weight;
+        i_token = new CAT(name, symbol);
     }
 
-    function addCollateral() public {}
-
-    function withdrawCollateral() public {}
-
-    function borrow(uint256 toBorrowAmount) public {
-        /**1. check if this user is allowed to borrow: i.e. has remaining free collateral
-         * 2. mint the tokens & send to user
-         * 3. update user loans
-         * 4. add Loan object to s_addressesToLoans
-         */
-
-        //TODO: 1. check if user is allowed to borrw
-
-        //2. mint the tokens and send to user
-        i_token._mintCAT(msg.sender, toBorrowAmount);
-
-        //3. update Loan object
+    function addCollateralAndMintCAT(
+        address collateralAddress,
+        uint256 amountOfCollateral,
+        uint256 amountToMint
+    ) external {
+        addCollateral(collateralAddress, amountOfCollateral);
+        mintCAT(amountToMint);
     }
 
-    //sending eth or other tokens will attempt to use the addCollateral function
-    receive() external payable {}
-
-    fallback() external payable {
-        addCollateral();
+    function addCollateral(address tokenCollateralAddress, uint256 amountOfCollateral)
+        public
+        moreThanZero(amountOfCollateral)
+        nonReentrant
+        isAllowedToken(tokenCollateralAddress)
+    {
+        s_userToTokenAddressToAmountDeposited[msg.sender][
+            tokenCollateralAddress
+        ] += amountOfCollateral;
+        emit CollateralDeposited(msg.sender, amountOfCollateral);
+        bool success = IERC20(tokenCollateralAddress).transferFrom(
+            msg.sender,
+            address(this),
+            amountOfCollateral
+        );
+        if (!success) {
+            revert Vault__TransferFailed();
+        }
     }
 
-    function getToken() public view returns (CAT) {
-        return i_token;
+    function withdrawCollateral(address tokenCollateralAddress, uint256 amountOfCollateral)
+        public
+        moreThanZero(amountOfCollateral)
+        nonReentrant
+    {
+        _withdrawCollateral(tokenCollateralAddress, amountOfCollateral, msg.sender, msg.sender);
+        revertIfHealthFactorIsBroken(msg.sender);
     }
 
-    function getPriceFeed() public view returns (address) {
-        return s_catPriceFeedAddress;
+    function repayCATAndWithdrawCollateral(
+        address tokenCollateralAddress,
+        uint256 amountOfCollateral,
+        uint256 amountOfCATToBurn
+    ) external {
+        repayCAT(amountOfCATToBurn);
+        withdrawCollateral(tokenCollateralAddress, amountOfCollateral);
     }
 
-    function getEthPriceFeed() public view returns (address) {
-        return s_ethUsdPriceFeed;
+    function _withdrawCollateral(
+        address tokenCollateralAddress,
+        uint256 amountCollateral,
+        address from,
+        address to
+    ) private {
+        s_userToTokenAddressToAmountDeposited[from][tokenCollateralAddress] -= amountCollateral;
+        bool success = IERC20(tokenCollateralAddress).transfer(to, amountCollateral);
+        if (!success) {
+            revert Vault__TransferFailed();
+        }
     }
 
-    function getAllowedCollateral() public view returns (address[] memory) {
-        return s_allowedCollateral;
+    // Don't call this function directly, you will just lose money!
+    function repayCAT(uint256 amountDscToBurn) public moreThanZero(amountDscToBurn) nonReentrant {
+        _repayCAT(amountDscToBurn, msg.sender, msg.sender);
+        revertIfHealthFactorIsBroken(msg.sender);
     }
 
-    function isAllowedCollateral(address collateralAddress) public view returns (bool) {
-        if (s_allowedCollateral.length == 0) return false;
-        return s_collateralPriceFeedsByAddress[collateralAddress] != address(0);
+    function _repayCAT(
+        uint256 amountDscToBurn,
+        address onBehalfOf,
+        address dscFrom
+    ) private {
+        s_userToCATMinted[onBehalfOf] -= amountDscToBurn;
+        bool success = i_token.transferFrom(dscFrom, address(this), amountDscToBurn);
+        if (!success) {
+            revert Vault__TransferFailed();
+        }
+        i_token.burn(amountDscToBurn);
     }
 
-    function getPriceFeedOfCollateral(address collateralAddress) public view returns (address) {
-        return s_collateralPriceFeedsByAddress[collateralAddress];
+    function mintCAT(uint256 amountDscToMint) public moreThanZero(amountDscToMint) nonReentrant {
+        s_userToCATMinted[msg.sender] += amountDscToMint;
+        revertIfHealthFactorIsBroken(msg.sender);
+        bool minted = i_token.mint(msg.sender, amountDscToMint);
+        if (minted != true) {
+            revert Vault__MintFailed();
+        }
     }
 
-    function getCollateralAmountUsd(address borrower) internal returns (uint256) {
-        //TODO
+    function getAccountInformation(address user)
+        public
+        view
+        returns (uint256 totalCATMinted, uint256 collateralValueInUsd)
+    {
+        totalCATMinted = s_userToCATMinted[user];
+        collateralValueInUsd = getCollateralAmountUsdForUser(user);
+    }
+
+    function calculateHealthFactor(address user) public view returns (uint256) {
+        (uint256 totalDscMinted, uint256 collateralValueInUsd) = getAccountInformation(user);
+        if (totalDscMinted == 0) return 100e18;
+        uint256 collateralAdjustedForThreshold = (collateralValueInUsd * i_collateral_weight) /
+            10000000000;
+        return (collateralAdjustedForThreshold * 1e18) / totalDscMinted;
+    }
+
+    function getCollateralAmountUsdForUser(address user)
+        public
+        view
+        returns (uint256 totalCollateralValueInUsd)
+    {
+        for (uint256 index = 0; index < s_collateralTokens.length; index++) {
+            address token = s_collateralTokens[index];
+            uint256 amount = s_userToTokenAddressToAmountDeposited[user][token];
+            totalCollateralValueInUsd += getUsdValue(token, amount);
+        }
+        return totalCollateralValueInUsd;
+    }
+
+    function getUsdValue(address token, uint256 amount) public view returns (uint256) {
+        address priceFeedAddress;
+
+        if (token == address(i_token)) priceFeedAddress = s_catPriceFeedAddress;
+        else priceFeedAddress = s_tokenAddressToPriceFeed[token];
+
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(priceFeedAddress);
+        (, int256 price, , , ) = priceFeed.latestRoundData();
+        // 1 ETH = 1000 USD
+        // The returned value from Chainlink will be 1000 * 1e8
+        // We want to have everything in terms of WEI, so we add 10 zeros at the end
+        return ((uint256(price) * 1e10) * amount) / 1e18;
+    }
+
+    function getTokenAmountFromUsd(address token, uint256 usdAmountInWei)
+        public
+        view
+        returns (uint256)
+    {
+        address priceFeedAddress;
+        if (token == address(i_token)) priceFeedAddress = s_catPriceFeedAddress;
+        else priceFeedAddress = s_tokenAddressToPriceFeed[token];
+
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(priceFeedAddress);
+        (, int256 price, , , ) = priceFeed.latestRoundData();
+        // 1 ETH = 1000 USD
+        // The returned value from Chainlink will be 1000 * 1e8
+        // Most USD pairs have 8 decimals, so we will just pretend they all do
+        return (uint256(price) * 1e10 * 1e18) / usdAmountInWei;
+    }
+
+    function revertIfHealthFactorIsBroken(address user) internal view {
+        uint256 userHealthFactor = calculateHealthFactor(user);
+        if (userHealthFactor < MIN_HEALTH_FACTOR) {
+            revert Vault__BreaksHealthFactor();
+        }
+    }
+
+    function liquidate(
+        address collateral,
+        address user,
+        uint256 debtToCover
+    ) external {
+        uint256 startingUserHealthFactor = calculateHealthFactor(user);
+        if (startingUserHealthFactor >= MIN_HEALTH_FACTOR) {
+            revert Vault__HealthFactorOk();
+        }
+        uint256 tokenAmountFromDebtCovered = getTokenAmountFromUsd(collateral, debtToCover);
+        uint256 bonusCollateral = (tokenAmountFromDebtCovered * LIQUIDATION_DISCOUNT) / 100;
+        // Burn DSC equal to debtToCover
+        // Figure out how much collateral to recover based on how much burnt
+        _withdrawCollateral(
+            collateral,
+            tokenAmountFromDebtCovered + bonusCollateral,
+            user,
+            msg.sender
+        );
+        _repayCAT(debtToCover, user, msg.sender);
+
+        uint256 endingUserHealthFactor = calculateHealthFactor(user);
+        require(startingUserHealthFactor < endingUserHealthFactor);
+    }
+
+    function getToken() public view returns (address) {
+        return address(i_token);
+    }
+
+    function isAllowedCollateral(address tokenAddress) public view returns (bool) {
+        return uint160(s_tokenAddressToPriceFeed[tokenAddress]) > 0;
     }
 }
