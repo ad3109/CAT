@@ -58,6 +58,15 @@ const { Contract } = require("ethers")
                   )
               })
           })
+          describe("getUsdValue", function () {
+              it("correctly calculates the USD value of a collateral token", async () => {})
+              it("correctly calculates the USD value of the commodity asset token", async () => {})
+          })
+
+          describe("getTokenAmountFromUsd", function () {
+              it("correctly calculates the collateral token amount for a given USD value", async () => {})
+              it("correctly calculates the CAT amount for a given USD value", async () => {})
+          })
 
           describe("addCollateral", function () {
               it("successfully adds eth as allowed collateral", async () => {})

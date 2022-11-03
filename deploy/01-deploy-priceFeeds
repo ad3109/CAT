@@ -1,0 +1,44 @@
+const { networkConfig, developmentChains, commodities } = require("../helper-hardhat-config")
+const { network } = require("hardhat")
+const {
+    developmentChains,
+    DECIMALS,
+    commodities,
+    initial_answer_prices_mocks,
+} = require("../helper-hardhat-config")
+//const { verify } = require("../utils/verify")
+
+module.exports = async ({ getNamedAccounts, deployments }) => {
+    const { deploy, log } = deployments
+
+    //deploy the any-api contract
+    const anyAPIargs = []
+    const anyAPIcontract = await deploy("anyAPIcontract", {
+        contract: "API-LINK",
+        from: deployer,
+        args: anyAPIargs,
+        log: true,
+    })
+
+    //deploy the price feeds
+    for (let i = 0; i < commodities.length; i++) {
+        let commodityName = commodities[i]
+        const args = [
+            commodityName,
+            DECIMALS,
+            initial_answer_prices_mocks[i],
+            [0xfba86b461eaf746924fe42d3137105d4e22d6ce8, anyAPIcontract.address],
+        ]
+        const priceFeed = await deploy(commodityName + "_priceFeed", {
+            contract: "PriceFeed",
+            from: deployer,
+            args: args,
+            log: true,
+        })
+        console.log(`Deployed ${commodityName} priceFeed`)
+    }
+
+    log("-------------------------------")
+}
+
+module.exports.tags = ["all", "priceFeeds"]

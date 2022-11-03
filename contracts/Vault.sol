@@ -161,18 +161,20 @@ contract Vault is ReentrancyGuard, Ownable {
     function getAccountInformation(address user)
         public
         view
-        returns (uint256 totalCATMinted, uint256 collateralValueInUsd)
+        returns (uint256 totalCATValueMintedInUsd, uint256 collateralValueInUsd)
     {
-        totalCATMinted = s_userToCATMinted[user];
+        totalCATValueMintedInUsd = getUsdValue(address(i_token), s_userToCATMinted[user]);
         collateralValueInUsd = getCollateralAmountUsdForUser(user);
     }
 
     function calculateHealthFactor(address user) public view returns (uint256) {
-        (uint256 totalDscMinted, uint256 collateralValueInUsd) = getAccountInformation(user);
-        if (totalDscMinted == 0) return 100e18;
+        (uint256 totalCATValueMintedInUsd, uint256 collateralValueInUsd) = getAccountInformation(
+            user
+        );
+        if (totalCATValueMintedInUsd == 0) return 100e18;
         uint256 collateralAdjustedForThreshold = (collateralValueInUsd * i_collateral_weight) /
             10000000000;
-        return (collateralAdjustedForThreshold * 1e18) / totalDscMinted;
+        return (collateralAdjustedForThreshold * 1e18) / totalCATValueMintedInUsd;
     }
 
     function getCollateralAmountUsdForUser(address user)
@@ -188,11 +190,11 @@ contract Vault is ReentrancyGuard, Ownable {
         return totalCollateralValueInUsd;
     }
 
-    function getUsdValue(address token, uint256 amount) public view returns (uint256) {
+    function getUsdValue(address tokenAddress, uint256 amount) public view returns (uint256) {
         address priceFeedAddress;
 
-        if (token == address(i_token)) priceFeedAddress = s_catPriceFeedAddress;
-        else priceFeedAddress = s_tokenAddressToPriceFeed[token];
+        if (tokenAddress == address(i_token)) priceFeedAddress = s_catPriceFeedAddress;
+        else priceFeedAddress = s_tokenAddressToPriceFeed[tokenAddress];
 
         AggregatorV3Interface priceFeed = AggregatorV3Interface(priceFeedAddress);
         (, int256 price, , , ) = priceFeed.latestRoundData();
