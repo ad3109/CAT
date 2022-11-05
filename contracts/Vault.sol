@@ -131,28 +131,36 @@ contract Vault is ReentrancyGuard, Ownable {
     }
 
     // Don't call this function directly, you will just lose money!
-    function repayCAT(uint256 amountDscToBurn) public moreThanZero(amountDscToBurn) nonReentrant {
-        _repayCAT(amountDscToBurn, msg.sender, msg.sender);
+    function repayCAT(uint256 amountOfCATToBurn)
+        public
+        moreThanZero(amountOfCATToBurn)
+        nonReentrant
+    {
+        _repayCAT(amountOfCATToBurn, msg.sender, msg.sender);
         revertIfHealthFactorIsBroken(msg.sender);
     }
 
     function _repayCAT(
-        uint256 amountDscToBurn,
+        uint256 amountOfCATToBurn,
         address onBehalfOf,
-        address dscFrom
+        address catFrom
     ) private {
-        s_userToCATMinted[onBehalfOf] -= amountDscToBurn;
-        bool success = i_token.transferFrom(dscFrom, address(this), amountDscToBurn);
+        s_userToCATMinted[onBehalfOf] -= amountOfCATToBurn;
+        bool success = i_token.transferFrom(catFrom, address(this), amountOfCATToBurn);
         if (!success) {
             revert Vault__TransferFailed();
         }
-        i_token.burn(amountDscToBurn);
+        i_token.burn(amountOfCATToBurn);
     }
 
-    function mintCAT(uint256 amountDscToMint) public moreThanZero(amountDscToMint) nonReentrant {
-        s_userToCATMinted[msg.sender] += amountDscToMint;
+    function mintCAT(uint256 amountOfCATToMint)
+        public
+        moreThanZero(amountOfCATToMint)
+        nonReentrant
+    {
+        s_userToCATMinted[msg.sender] += amountOfCATToMint;
         revertIfHealthFactorIsBroken(msg.sender);
-        bool minted = i_token.mint(msg.sender, amountDscToMint);
+        bool minted = i_token.mint(msg.sender, amountOfCATToMint);
         if (minted != true) {
             revert Vault__MintFailed();
         }
@@ -239,7 +247,7 @@ contract Vault is ReentrancyGuard, Ownable {
         }
         uint256 tokenAmountFromDebtCovered = getTokenAmountFromUsd(collateral, debtToCover);
         uint256 bonusCollateral = (tokenAmountFromDebtCovered * LIQUIDATION_DISCOUNT) / 100;
-        // Burn DSC equal to debtToCover
+        // Burn CAT equal to debtToCover
         // Figure out how much collateral to recover based on how much burnt
         _withdrawCollateral(
             collateral,
@@ -259,5 +267,9 @@ contract Vault is ReentrancyGuard, Ownable {
 
     function isAllowedCollateral(address tokenAddress) public view returns (bool) {
         return uint160(s_tokenAddressToPriceFeed[tokenAddress]) > 0;
+    }
+
+    function updatePriceFeedAddressOfCat(address newAddress) public onlyOwner {
+        s_catPriceFeedAddress = newAddress;
     }
 }
