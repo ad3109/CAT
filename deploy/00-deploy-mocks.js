@@ -64,6 +64,9 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
             log: true,
             args: ["Chainlink", "LINK"],
         })
+
+        //TODO: deploy Mock Oracle contract for any-api
+
         log("Mocks deployed!")
         log("-----------------------------------------------")
     }

@@ -3,6 +3,7 @@ const networkConfig = {
         name: "goerli",
         pricefeeds: {
             BRENTOIL: 0.01064169415771,
+            COAL: 0.0028248587570621,
             COCOA: 0.00042517006802721,
             COFFEE: 0.56179775280899,
             CORN: 0.14498006524103,
@@ -35,12 +36,15 @@ const networkConfig = {
             LINK: "0xE4e0EB46c269B11067031b6F4B7b658E5dAE1B7b",
             WETH: "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
         },
+        oracleContract: "0xcc79157eb46f5624204f47ab42b3906caa40eab7",
+        jobId: "ca98366cc7314957b8c012c72f05aeeb",
     },
 }
 
 const developmentChains = ["hardhat", "localhost"]
 const commodities = [
     "BRENTOIL",
+    "COAL",
     "COCOA",
     "COFFEE",
     "CORN",
@@ -50,7 +54,6 @@ const commodities = [
     "LUMBER",
     "NG",
     "RICE",
-    "ROBUSTA",
     "RUBBER",
     "SOYBEAN",
     "SUGAR",
@@ -66,6 +69,7 @@ const commodities = [
 const DECIMALS = 8
 const initial_answer_prices_mocks = {
     BRENTOIL: 9397003671,
+    COAL: 35400000000,
     COCOA: 235200037632,
     COFFEE: 178000001,
     CORN: 689750025,
@@ -75,7 +79,6 @@ const initial_answer_prices_mocks = {
     LUMBER: 46130142358,
     NG: 617800004,
     RICE: 1653000212,
-    ROBUSTA: 184501845018,
     RUBBER: 148000001,
     SOYBEAN: 1420000105,
     SUGAR: 18340000,
