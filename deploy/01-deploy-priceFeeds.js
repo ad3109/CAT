@@ -1,57 +1,40 @@
-const { networkConfig, developmentChains, commodities } = require("../helper-hardhat-config")
-const { network } = require("hardhat")
 const {
+    networkConfig,
     developmentChains,
-    DECIMALS,
     commodities,
+    DECIMALS,
     initial_answer_prices_mocks,
 } = require("../helper-hardhat-config")
+const { network } = require("hardhat")
+const {} = require("../helper-hardhat-config")
 
 //const { verify } = require("../utils/verify")
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy, log } = deployments
-
+    const { deployer } = await getNamedAccounts()
+    const chainId = network.config.chainId
     let contractAddress_LINK, oracleAddress, jobId
     if (developmentChains.includes(network.name)) {
         contractAddress_LINK = (await deployments.get("MockLINK")).address
         oracleAddress = (await deployments.get("MockOracle")).address
-        jobId = "1"
     } else {
         contractAddress_LINK = networkConfig[chainId]["LINK"]
         oracleAddress = networkConfig[chainId]["oracleContract"]
-        jobId = networkConfig[chainId]["jobId"]
     }
-
-    //deploy the any-api contract
-    //create an apiURL for every commodity
-    const apiKeys = JSON.parse(process.env.COMMODITIES_API_KEYS)
-    let commodityAPIurls = new Array()
-    for (let i = 0; i < commodities.length; i++) {
-        let commodityName = commodities[i]
-        let url =
-            "https://commodities-api.com/api/latest?access_key=" +
-            apiKeys[i] +
-            "&base=USD&symbols=" +
-            commodityName
-    }
-    const anyAPIargs = [process.env.COMMODITIES_API_URL, contractAddress_LINK, jobId, oracleAddress]
-
-    const anyAPIcontract = await deploy("PriceFetcher", {
-        contract: "PriceFetcher",
-        from: deployer,
-        args: anyAPIargs,
-        log: true,
-    })
-
     //deploy the price feeds
+    const apiURLs = JSON.parse(process.env.COMMODITIES_API_URLS)
     for (let i = 0; i < commodities.length; i++) {
         let commodityName = commodities[i]
         const args = [
-            commodityName,
+            commodityName + "_priceFeed",
             DECIMALS,
-            initial_answer_prices_mocks[i],
-            [0xfba86b461eaf746924fe42d3137105d4e22d6ce8, anyAPIcontract.address],
+            initial_answer_prices_mocks[commodityName],
+            [deployer, process.env.ADDRESS2], //TODO: dif address per network
+            contractAddress_LINK,
+            oracleAddress,
+            apiURLs[commodityName],
+            "data,rates," + commodityName,
         ]
         const priceFeed = await deploy(commodityName + "_priceFeed", {
             contract: "PriceFeed",
@@ -61,7 +44,6 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         })
         console.log(`Deployed ${commodityName} priceFeed`)
     }
-
     log("-------------------------------")
 }
 

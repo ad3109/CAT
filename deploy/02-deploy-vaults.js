@@ -39,7 +39,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         LINK_USD_PriceFeedAddress = networkConfig[chainId][pricefeeds]["LINK"]
         for (let i = 0; i < commodities.length; i++) {
             let commodityName = commodities[i]
-            commodityPriceFeedAddresses[i] = networkConfig[chainId][commodityName]
+            commodityPriceFeedAddresses[i] = await deployments.get(commodityName + "_priceFeed")
+                .address
         }
         contractAddress_BTC = networkConfig[chainId]["BTC"]
         contractAddress_LINK = networkConfig[chainId]["LINK"]

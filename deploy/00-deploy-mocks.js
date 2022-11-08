@@ -13,7 +13,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     if (developmentChains.includes(network.name)) {
         log("Local network detected! Deploying mocks...")
 
-        //deploy BTC, ETH, and LINK price feeds
+        //deploy BTC, ETH, LINK, and XAU price feeds
         await deploy("MockV3AggregatorBTC", {
             contract: "MockV3Aggregator",
             from: deployer,
@@ -32,18 +32,12 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
             log: true,
             args: [DECIMALS, initial_answer_prices_mocks["LINK"]],
         })
-
-        //deploy commodities
-        for (let i = 0; i < commodities.length; i++) {
-            let commodityName = commodities[i]
-            let str = "MockV3Aggregator_" + commodityName
-            await deploy(str, {
-                contract: "MockV3Aggregator",
-                from: deployer,
-                log: true,
-                args: [DECIMALS, initial_answer_prices_mocks[commodityName]],
-            })
-        }
+        await deploy("MockV3AggregatorXAU", {
+            contract: "MockV3Aggregator",
+            from: deployer,
+            log: true,
+            args: [DECIMALS, initial_answer_prices_mocks["XAU"]],
+        })
 
         //deploy mock BTC and LINK contracts
         await deploy("MockBTC", {
@@ -65,7 +59,12 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
             args: ["Chainlink", "LINK"],
         })
 
-        //TODO: deploy Mock Oracle contract for any-api
+        await deploy("MockOracle", {
+            contract: "MockOracle",
+            from: deployer,
+            log: true,
+            args: [],
+        })
 
         log("Mocks deployed!")
         log("-----------------------------------------------")

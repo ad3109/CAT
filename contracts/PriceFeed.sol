@@ -35,7 +35,6 @@ contract PriceFeed is ChainlinkClient, ConfirmedOwner, AggregatorV3Interface {
         address[] memory whiteListedAddresses,
         address link_tokenAddress,
         address chainlinkOracleAddress,
-        bytes32 jobId,
         string memory apiUrl,
         string memory path
     ) ConfirmedOwner(msg.sender) {
@@ -50,7 +49,7 @@ contract PriceFeed is ChainlinkClient, ConfirmedOwner, AggregatorV3Interface {
 
         setChainlinkToken(link_tokenAddress); //goerli: 0x326C977E6efc84E512bB9C30f76E30c160eD06FB
         setChainlinkOracle(chainlinkOracleAddress); //goerli: 0xCC79157eb46F5624204f47AB42b3906cAA40eaB7
-        i_anyApi_jobId = jobId; //goerli: ca98366cc7314957b8c012c72f05aeeb
+        i_anyApi_jobId = "fcf4140d696d44b687012232948bdd5d";
         s_fee = (1 * LINK_DIVISIBILITY) / 10; // 0,1 * 10**18 (Varies by network and job)
         s_apiUrl = apiUrl;
         s_path = path;

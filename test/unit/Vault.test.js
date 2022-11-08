@@ -15,7 +15,7 @@ const { Contract } = require("ethers")
               borrower = (await getNamedAccounts()).borrower
               otherBorrower = (await getNamedAccounts()).otherBorrower
               liquidator = (await getNamedAccounts()).liquidator
-              goldVault = await ethers.getContract("XAU_vault")
+              goldVault = await ethers.getContract("XAG_vault")
 
               mockV3AggregatorBTC = await ethers.getContract("MockV3AggregatorBTC")
               mockV3AggregatorETH = await ethers.getContract("MockV3AggregatorETH")
