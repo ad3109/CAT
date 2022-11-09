@@ -27,9 +27,7 @@ contract Vault is ReentrancyGuard, Ownable {
 
     address public s_catPriceFeedAddress;
     mapping(address => address) public s_tokenAddressToPriceFeed;
-    // user -> token -> amount
     mapping(address => mapping(address => uint256)) public s_userToTokenAddressToAmountDeposited;
-    // user -> amount
     mapping(address => uint256) public s_userToCATMinted;
 
     address[] public s_collateralTokens;
@@ -85,15 +83,9 @@ contract Vault is ReentrancyGuard, Ownable {
         nonReentrant
         isAllowedToken(tokenCollateralAddress)
     {
-        s_userToTokenAddressToAmountDeposited[msg.sender][
-            tokenCollateralAddress
-        ] += amountOfCollateral;
+        s_userToTokenAddressToAmountDeposited[msg.sender][tokenCollateralAddress] += amountOfCollateral;
         emit CollateralDeposited(msg.sender, amountOfCollateral);
-        bool success = IERC20(tokenCollateralAddress).transferFrom(
-            msg.sender,
-            address(this),
-            amountOfCollateral
-        );
+        bool success = IERC20(tokenCollateralAddress).transferFrom(msg.sender, address(this), amountOfCollateral);
         if (!success) {
             revert Vault__TransferFailed();
         }
@@ -131,11 +123,7 @@ contract Vault is ReentrancyGuard, Ownable {
     }
 
     // Don't call this function directly, you will just lose money!
-    function repayCAT(uint256 amountOfCATToBurn)
-        public
-        moreThanZero(amountOfCATToBurn)
-        nonReentrant
-    {
+    function repayCAT(uint256 amountOfCATToBurn) public moreThanZero(amountOfCATToBurn) nonReentrant {
         _repayCAT(amountOfCATToBurn, msg.sender, msg.sender);
         revertIfHealthFactorIsBroken(msg.sender);
     }
@@ -153,11 +141,7 @@ contract Vault is ReentrancyGuard, Ownable {
         i_token.burn(amountOfCATToBurn);
     }
 
-    function mintCAT(uint256 amountOfCATToMint)
-        public
-        moreThanZero(amountOfCATToMint)
-        nonReentrant
-    {
+    function mintCAT(uint256 amountOfCATToMint) public moreThanZero(amountOfCATToMint) nonReentrant {
         s_userToCATMinted[msg.sender] += amountOfCATToMint;
         revertIfHealthFactorIsBroken(msg.sender);
         bool minted = i_token.mint(msg.sender, amountOfCATToMint);
@@ -176,20 +160,13 @@ contract Vault is ReentrancyGuard, Ownable {
     }
 
     function calculateHealthFactor(address user) public view returns (uint256) {
-        (uint256 totalCATValueMintedInUsd, uint256 collateralValueInUsd) = getAccountInformation(
-            user
-        );
+        (uint256 totalCATValueMintedInUsd, uint256 collateralValueInUsd) = getAccountInformation(user);
         if (totalCATValueMintedInUsd == 0) return 100e18;
-        uint256 collateralAdjustedForThreshold = (collateralValueInUsd * i_collateral_weight) /
-            10000000000;
+        uint256 collateralAdjustedForThreshold = (collateralValueInUsd * i_collateral_weight) / 10000000000;
         return (collateralAdjustedForThreshold * 1e18) / totalCATValueMintedInUsd;
     }
 
-    function getCollateralAmountUsdForUser(address user)
-        public
-        view
-        returns (uint256 totalCollateralValueInUsd)
-    {
+    function getCollateralAmountUsdForUser(address user) public view returns (uint256 totalCollateralValueInUsd) {
         for (uint256 index = 0; index < s_collateralTokens.length; index++) {
             address token = s_collateralTokens[index];
             uint256 amount = s_userToTokenAddressToAmountDeposited[user][token];
@@ -198,35 +175,22 @@ contract Vault is ReentrancyGuard, Ownable {
         return totalCollateralValueInUsd;
     }
 
-    function getUsdValue(address tokenAddress, uint256 amount) public view returns (uint256) {
-        address priceFeedAddress;
-
-        if (tokenAddress == address(i_token)) priceFeedAddress = s_catPriceFeedAddress;
-        else priceFeedAddress = s_tokenAddressToPriceFeed[tokenAddress];
-
-        AggregatorV3Interface priceFeed = AggregatorV3Interface(priceFeedAddress);
-        (, int256 price, , , ) = priceFeed.latestRoundData();
-        // 1 ETH = 1000 USD
-        // The returned value from Chainlink will be 1000 * 1e8
-        // We want to have everything in terms of WEI, so we add 10 zeros at the end
-        return ((uint256(price) * 1e10) * amount) / 1e18;
+    function getPrice(address tokenAddress) internal view returns (int256 price, uint8 decimals) {
+        AggregatorV3Interface priceFeed = (tokenAddress == address(i_token))
+            ? AggregatorV3Interface(s_catPriceFeedAddress)
+            : AggregatorV3Interface(s_tokenAddressToPriceFeed[tokenAddress]);
+        (, price, , , ) = priceFeed.latestRoundData();
+        decimals = priceFeed.decimals();
     }
 
-    function getTokenAmountFromUsd(address token, uint256 usdAmountInWei)
-        public
-        view
-        returns (uint256)
-    {
-        address priceFeedAddress;
-        if (token == address(i_token)) priceFeedAddress = s_catPriceFeedAddress;
-        else priceFeedAddress = s_tokenAddressToPriceFeed[token];
+    function getUsdValue(address tokenAddress, uint256 amount) internal view returns (uint256) {
+        (int256 price, uint8 decimals) = getPrice(tokenAddress);
+        return ((uint256(price) * 1**(18 - decimals) * amount) / 1e18);
+    }
 
-        AggregatorV3Interface priceFeed = AggregatorV3Interface(priceFeedAddress);
-        (, int256 price, , , ) = priceFeed.latestRoundData();
-        // 1 ETH = 1000 USD
-        // The returned value from Chainlink will be 1000 * 1e8
-        // Most USD pairs have 8 decimals, so we will just pretend they all do
-        return (uint256(price) * 1e10 * 1e18) / usdAmountInWei;
+    function getTokenAmountFromUsd(address tokenAddress, uint256 usdAmountInWei) internal view returns (uint256) {
+        (int256 price, uint8 decimals) = getPrice(tokenAddress);
+        return (uint256(price) * 1**(18 - decimals) * 1e18) / usdAmountInWei; //1 unit = 1e18 wei
     }
 
     function revertIfHealthFactorIsBroken(address user) internal view {
@@ -236,8 +200,14 @@ contract Vault is ReentrancyGuard, Ownable {
         }
     }
 
+    /*
+        3rd party vigilante tracks positions. if health factor < min_health_factor, he/she can initiate liquidation
+        liquidator chooses a single collateral type to seize
+        //TODO: modify to restrict to partial liquidation, i.e. only liquidate enough to ensure health factor is < min_health_factor (+safety margin)
+                current implementation allows for complete liquidation which is a bit excessive
+    */
     function liquidate(
-        address collateral,
+        address addressOfCollateralToBeSeized,
         address user,
         uint256 debtToCover
     ) external {
@@ -245,12 +215,12 @@ contract Vault is ReentrancyGuard, Ownable {
         if (startingUserHealthFactor >= MIN_HEALTH_FACTOR) {
             revert Vault__HealthFactorOk();
         }
-        uint256 tokenAmountFromDebtCovered = getTokenAmountFromUsd(collateral, debtToCover);
+        uint256 tokenAmountFromDebtCovered = getTokenAmountFromUsd(addressOfCollateralToBeSeized, debtToCover);
         uint256 bonusCollateral = (tokenAmountFromDebtCovered * LIQUIDATION_DISCOUNT) / 100;
         // Burn CAT equal to debtToCover
         // Figure out how much collateral to recover based on how much burnt
         _withdrawCollateral(
-            collateral,
+            addressOfCollateralToBeSeized,
             tokenAmountFromDebtCovered + bonusCollateral,
             user,
             msg.sender
@@ -261,12 +231,20 @@ contract Vault is ReentrancyGuard, Ownable {
         require(startingUserHealthFactor < endingUserHealthFactor);
     }
 
-    function getToken() public view returns (address) {
+    function getToken() external view returns (address) {
         return address(i_token);
     }
 
-    function isAllowedCollateral(address tokenAddress) public view returns (bool) {
+    function isAllowedCollateral(address tokenAddress) external view returns (bool) {
         return uint160(s_tokenAddressToPriceFeed[tokenAddress]) > 0;
+    }
+
+    function getCollateralTokens() external view returns (address[] memory) {
+        return s_collateralTokens;
+    }
+
+    function getPriceFeedForCollateralToken(address tokenAddress) external view returns (address) {
+        return s_tokenAddressToPriceFeed[tokenAddress];
     }
 
     function updatePriceFeedAddressOfCat(address newAddress) public onlyOwner {

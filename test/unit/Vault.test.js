@@ -10,18 +10,20 @@ const { Contract } = require("ethers")
           let borrower, liquidator, otherBorrower
 
           beforeEach(async () => {
-              await deployments.fixture(["mocks", "vaults"])
+              await deployments.fixture(["mocks", "priceFeeds", "vaults"])
+              mockV3AggregatorGLD = await ethers.getContract("MockV3AggregatorXAU")
+
               deployer = (await getNamedAccounts()).deployer
               borrower = (await getNamedAccounts()).borrower
               otherBorrower = (await getNamedAccounts()).otherBorrower
               liquidator = (await getNamedAccounts()).liquidator
-              goldVault = await ethers.getContract("XAG_vault")
+              goldVault = await ethers.getContract("XAU_vault")
 
-              mockV3AggregatorBTC = await ethers.getContract("MockV3AggregatorBTC")
-              mockV3AggregatorETH = await ethers.getContract("MockV3AggregatorETH")
+              mockV3AggregatorBTC = await ethers.getContract("MockV3AggregatorWBTC")
+              mockV3AggregatorETH = await ethers.getContract("MockV3AggregatorWETH")
               mockV3AggregatorLINK = await ethers.getContract("MockV3AggregatorLINK")
-              mockV3AggregatorGLD = await ethers.getContract("MockV3Aggregator_XAU")
-              mockWBTC = await ethers.getContract("MockBTC")
+
+              mockWBTC = await ethers.getContract("MockWBTC")
               mockWETH = await ethers.getContract("MockWETH")
               mockLINK = await ethers.getContract("MockLINK")
           })
@@ -39,21 +41,17 @@ const { Contract } = require("ethers")
                   assert.isTrue(await goldVault.isAllowedCollateral(mockWETH.address))
                   assert.isTrue(await goldVault.isAllowedCollateral(mockWBTC.address))
                   assert.isTrue(await goldVault.isAllowedCollateral(mockLINK.address))
-                  assert.isFalse(
-                      await goldVault.isAllowedCollateral(
-                          "0x4aeceb6486d25d5015bf8f8323914a36204ed4b7"
-                      )
-                  )
+                  assert.isFalse(await goldVault.isAllowedCollateral("0x4aeceb6486d25d5015bf8f8323914a36204ed4b7"))
                   assert.strictEqual(
-                      await goldVault.s_tokenAddressToPriceFeed[mockWETH.address],
+                      await goldVault.getPriceFeedForCollateralToken(mockWETH.address),
                       mockV3AggregatorETH.address
                   )
                   assert.strictEqual(
-                      await goldVault.s_tokenAddressToPriceFeed[mockBTC.address],
+                      await goldVault.getPriceFeedForCollateralToken(mockWBTC.address),
                       mockV3AggregatorBTC.address
                   )
                   assert.strictEqual(
-                      await goldVault.s_tokenAddressToPriceFeed[mockLINK.address],
+                      await goldVault.getPriceFeedForCollateralToken(mockLINK.address),
                       mockV3AggregatorLINK.address
                   )
               })

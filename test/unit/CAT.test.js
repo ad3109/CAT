@@ -6,14 +6,14 @@ describe("CAT contract", function () {
     beforeEach(async () => {
         owner = await ethers.getSigners()[0]
         const CATFactory = await ethers.getContractFactory("CAT")
-        CAT = await CATFactory.deploy("Oil", "WTIOIL")
+        CAT = await CATFactory.deploy("BRENTOIL", "BRENTOIL")
     })
     describe("constructor", function () {
         it("token name and symbol set correctly", async function () {
             const nameResponse = await CAT.name()
             const symbolResponse = await CAT.symbol()
-            assert.equal(nameResponse, "Oil")
-            assert.equal(symbolResponse, "WTIOIL")
+            assert.equal(nameResponse, "BRENTOIL")
+            assert.equal(symbolResponse, "BRENTOIL")
         })
         it("supply is zero after construction", async function () {
             const response = await CAT.totalSupply()

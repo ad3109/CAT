@@ -6,21 +6,21 @@ const { Contract } = require("ethers")
 !developmentChains.includes(network.name)
     ? describe.skip
     : describe("Integration Vault-CAT", function () {
-          let deployer, lumberVault, mockV3AggregatorBTC, mockV3AggregatorETH, mockV3AggregatorLBS
+          let deployer, goldVault
 
           beforeEach(async () => {
-              await deployments.fixture(["mocks", "vaults"])
+              await deployments.fixture(["mocks", "vaults", "priceFeeds"])
               deployer = (await getNamedAccounts()).deployer
-              lumberVault = await ethers.getContract("LUMBER_vault")
+              goldVault = await ethers.getContract("XAU_vault")
 
-              mockV3AggregatorBTC = await ethers.getContract("MockV3AggregatorBTC")
-              mockV3AggregatorETH = await ethers.getContract("MockV3AggregatorETH")
-              mockV3AggregatorLBS = await ethers.getContract("MockV3Aggregator_LUMBER")
+              //   mockV3AggregatorBTC = await ethers.getContract("MockV3AggregatorWBTC")
+              //   mockV3AggregatorETH = await ethers.getContract("MockV3AggregatorWETH")
+              //   priceFeedContract_LUMBER = await ethers.getContract("LUMBER_priceFeed")
           })
 
           describe("CAT contract creation", function () {
               it("initial supply equal to zero", async () => {
-                  const contractAddress = await lumberVault.getToken()
+                  const contractAddress = await goldVault.getToken()
                   const contract = await ethers.getContractAt("CAT", contractAddress)
                   const supply = await contract.totalSupply()
                   assert(supply, 0)
