@@ -1,5 +1,4 @@
 //SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
@@ -8,10 +7,8 @@ import "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
 
 error PriceFeed_NotWhitelisted();
 
-contract PriceFeed is ChainlinkClient, ConfirmedOwner, AggregatorV3Interface {
+contract PriceFeed is ChainlinkClient, AggregatorV3Interface {
     using Chainlink for Chainlink.Request;
-
-    mapping(address => bool) public s_addressesAllowedToModifyPrice;
 
     uint8 public immutable i_decimals;
     string public s_symbol;
@@ -19,14 +16,23 @@ contract PriceFeed is ChainlinkClient, ConfirmedOwner, AggregatorV3Interface {
     uint256 public s_updatedAt;
 
     bytes32 private immutable i_anyApi_jobId;
-    uint256 private s_fee;
+    uint256 private constant FEE = 10**17;
 
     string s_apiUrl;
     string s_path;
 
     int256 constant TIMES_AMOUNT = 1e18;
 
+    mapping(address => bool) public s_addressesAllowedToModifyPrice;
+
     event RequestPrice(bytes32 indexed requestId, uint256 _price);
+
+    modifier onlyWhitelisted() {
+        if (!s_addressesAllowedToModifyPrice[msg.sender]) {
+            revert PriceFeed_NotWhitelisted();
+        }
+        _;
+    }
 
     constructor(
         string memory symbol,
@@ -37,7 +43,7 @@ contract PriceFeed is ChainlinkClient, ConfirmedOwner, AggregatorV3Interface {
         address chainlinkOracleAddress,
         string memory apiUrl,
         string memory path
-    ) ConfirmedOwner(msg.sender) {
+    ) {
         s_addressesAllowedToModifyPrice[msg.sender] = true;
         for (uint256 i = 0; i < whiteListedAddresses.length; i++) {
             s_addressesAllowedToModifyPrice[whiteListedAddresses[i]] = true;
@@ -50,28 +56,18 @@ contract PriceFeed is ChainlinkClient, ConfirmedOwner, AggregatorV3Interface {
         setChainlinkToken(link_tokenAddress); //goerli: 0x326C977E6efc84E512bB9C30f76E30c160eD06FB
         setChainlinkOracle(chainlinkOracleAddress); //goerli: 0xCC79157eb46F5624204f47AB42b3906cAA40eaB7
         i_anyApi_jobId = "fcf4140d696d44b687012232948bdd5d";
-        s_fee = (1 * LINK_DIVISIBILITY) / 10; // 0,1 * 10**18 (Varies by network and job)
         s_apiUrl = apiUrl;
         s_path = path;
     }
 
     //create a chainlink request to retrieve API response, find the target data and remove decimals
-    function fetchNewPrice() public returns (bytes32 requestId) {
-        Chainlink.Request memory req = buildChainlinkRequest(
-            i_anyApi_jobId,
-            address(this),
-            this.fulfill.selector
-        );
+    function fetchNewPrice() external returns (bytes32 requestId) {
+        Chainlink.Request memory req = buildChainlinkRequest(i_anyApi_jobId, address(this), this.fulfill.selector);
         // Set the URL to perform the GET request on
         req.add("get", s_apiUrl);
         req.add("path", s_path);
         req.addInt("times", TIMES_AMOUNT);
-        return sendChainlinkRequest(req, s_fee);
-    }
-
-    function updatePrice(uint256 newPrice) public onlyWhitelisted {
-        s_price = newPrice;
-        s_updatedAt = block.timestamp;
+        return sendChainlinkRequest(req, FEE);
     }
 
     function decimals() external view override returns (uint8) {
@@ -83,7 +79,7 @@ contract PriceFeed is ChainlinkClient, ConfirmedOwner, AggregatorV3Interface {
     }
 
     function version() external view override returns (uint256) {
-        return 1;
+        return 0;
     }
 
     function getRoundData(
@@ -120,13 +116,6 @@ contract PriceFeed is ChainlinkClient, ConfirmedOwner, AggregatorV3Interface {
         answer = int256(s_price);
     }
 
-    modifier onlyWhitelisted() {
-        if (!s_addressesAllowedToModifyPrice[msg.sender]) {
-            revert PriceFeed_NotWhitelisted();
-        }
-        _;
-    }
-
     function addUserToWhitelist(address user) public onlyWhitelisted {
         s_addressesAllowedToModifyPrice[user] = true;
     }
@@ -138,19 +127,17 @@ contract PriceFeed is ChainlinkClient, ConfirmedOwner, AggregatorV3Interface {
     /**
      * Receive the response in the form of uint256
      */
-    function fulfill(bytes32 _requestId, uint256 _price)
-        public
-        recordChainlinkFulfillment(_requestId)
-    {
+    function fulfill(bytes32 _requestId, uint256 _price) public recordChainlinkFulfillment(_requestId) {
         emit RequestPrice(_requestId, _price);
-
         //divide number!: the api unhelpfully returns a "price" equal to 1/price
         //the number has already been multiplied with 1e18
         //therefore to get a number with precision i_decimals, we need to multiply 1 by (1e18*1**i_decimals)
-        s_price = (1e18 * 1**i_decimals) / _price;
+        s_price = (1e18 * 10**i_decimals) / _price;
     }
 
-    function updateAPIurl(string calldata newURL) external onlyOwner {
-        s_apiUrl = newURL;
+    //TODO: remove function - for demo only - no one should have the power to replace the price
+    function updatePrice(uint256 newPrice) public onlyWhitelisted {
+        s_price = newPrice;
+        s_updatedAt = block.timestamp;
     }
 }
