@@ -175,7 +175,7 @@ contract Vault is ReentrancyGuard, Ownable {
         return totalCollateralValueInUsd;
     }
 
-    function getPrice(address tokenAddress) internal view returns (int256 price, uint8 decimals) {
+    function getPrice(address tokenAddress) public view returns (int256 price, uint8 decimals) {
         AggregatorV3Interface priceFeed = (tokenAddress == address(i_token))
             ? AggregatorV3Interface(s_catPriceFeedAddress)
             : AggregatorV3Interface(s_tokenAddressToPriceFeed[tokenAddress]);
@@ -183,14 +183,14 @@ contract Vault is ReentrancyGuard, Ownable {
         decimals = priceFeed.decimals();
     }
 
-    function getUsdValue(address tokenAddress, uint256 amount) internal view returns (uint256) {
+    function getUsdValue(address tokenAddress, uint256 amount) public view returns (uint256) {
         (int256 price, uint8 decimals) = getPrice(tokenAddress);
-        return ((uint256(price) * 1**(18 - decimals) * amount) / 1e18);
+        return ((uint256(price) * 10**(18 - decimals) * amount) / 1e18);
     }
 
-    function getTokenAmountFromUsd(address tokenAddress, uint256 usdAmountInWei) internal view returns (uint256) {
+    function getTokenAmountFromUsd(address tokenAddress, uint256 usdAmountInWei) public view returns (uint256) {
         (int256 price, uint8 decimals) = getPrice(tokenAddress);
-        return (uint256(price) * 1**(18 - decimals) * 1e18) / usdAmountInWei; //1 unit = 1e18 wei
+        return (usdAmountInWei * 1e18) / (uint256(price) * 10**(18 - decimals)); //1 unit = 1e18 wei
     }
 
     function revertIfHealthFactorIsBroken(address user) internal view {

@@ -56,18 +56,46 @@ const { Contract } = require("ethers")
                   )
               })
           })
+          describe("getPrice", function () {
+              it("correctly fetches the USD price of a collateral token", async () => {
+                  let [price, decimals] = await goldVault.getPrice(mockWBTC.address)
+                  expect(price.toNumber()).to.equal(ethers.utils.parseUnits("21500", 8))
+              })
+              it("correctly fetches the USD price of the commodity token", async () => {
+                  let [price] = await goldVault.getPrice(await goldVault.getToken())
+                  expect(price.toNumber()).to.equal(165313848341)
+              })
+          })
+
           describe("getUsdValue", function () {
-              it("correctly calculates the USD value of a collateral token", async () => {})
-              it("correctly calculates the USD value of the commodity asset token", async () => {})
+              it("correctly calculates the USD value of a collateral token", async () => {
+                  //2 BTC == 43000 USD
+                  let result = await goldVault.getUsdValue(mockWBTC.address, ethers.utils.parseUnits("2"))
+                  expect(result).to.equal(ethers.utils.parseUnits("43000"))
+              })
+              it("correctly calculates the USD value of the commodity token", async () => {
+                  //3500 USD / 1653.13848341 usd/ounce =
+                  let result = await goldVault.getTokenAmountFromUsd(
+                      await goldVault.getToken(),
+                      ethers.utils.parseUnits("3500")
+                  )
+                  expect(result).to.equal(ethers.utils.parseUnits("2.117185000000967341"))
+              })
           })
 
           describe("getTokenAmountFromUsd", function () {
-              it("correctly calculates the collateral token amount for a given USD value", async () => {})
-              it("correctly calculates the CAT amount for a given USD value", async () => {})
+              it("correctly calculates the collateral token amount for a given USD value", async () => {
+                  //1500 USD => 200 LINK
+                  let result = await goldVault.getTokenAmountFromUsd(mockLINK.address, ethers.utils.parseUnits("1500"))
+                  expect(result).to.equal(ethers.utils.parseUnits("200"))
+              })
+              it("correctly calculates the CAT amount for a given USD value", async () => {
+                  165313848341
+              })
           })
 
           describe("addCollateral", function () {
-              it("successfully adds eth as allowed collateral", async () => {})
+              it("successfully adds WETH as allowed collateral", async () => {})
               it("successfully adds allowed collateral", async () => {
                   //await mockWBTC.transfer(borrower.address, ethers.utils.)
               })
