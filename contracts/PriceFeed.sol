@@ -44,8 +44,9 @@ contract PriceFeed is ChainlinkClient, AggregatorV3Interface {
         string memory path
     ) {
         s_addressesAllowedToModifyPrice[msg.sender] = true;
-        for (uint256 i = 0; i < whiteListedAddresses.length; i++) {
+        for (uint256 i = 0; i < whiteListedAddresses.length;) {
             s_addressesAllowedToModifyPrice[whiteListedAddresses[i]] = true;
+            unchecked{ i++; }
         }
         s_symbol = symbol;
         i_decimals = priceDecimals;
