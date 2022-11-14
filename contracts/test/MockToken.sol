@@ -10,7 +10,7 @@ contract MockToken is ERC20 {
         i_owner = msg.sender;
     }
 
-    function _mintCAT(address receivingAddress, uint256 amount) public {
+    function _mintToken(address receivingAddress, uint256 amount) public {
         _mint(receivingAddress, amount);
     }
 }

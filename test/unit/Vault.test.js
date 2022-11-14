@@ -1,13 +1,15 @@
-const { deployments, ethers, getNamedAccounts } = require("hardhat")
+const { deployments, ethers, getNamedAccounts, network } = require("hardhat")
 const { assert, expect } = require("chai")
 const { developmentChains } = require("../../helper-hardhat-config")
 const { Contract } = require("ethers")
+const { MockProvider } = require("ethereum-waffle")
 
 !developmentChains.includes(network.name)
     ? describe.skip
     : describe("Vault", function () {
           let deployer, goldVault, mockV3AggregatorBTC, mockV3AggregatorETH, mockV3AggregatorGLD
           let borrower, liquidator, otherBorrower
+          let borrowerSigner
 
           beforeEach(async () => {
               await deployments.fixture(["mocks", "priceFeeds", "vaults"])
@@ -19,6 +21,8 @@ const { Contract } = require("ethers")
               liquidator = (await getNamedAccounts()).liquidator
               goldVault = await ethers.getContract("XAU_vault")
 
+              borrowerSigner = await ethers.getSigner(borrower)
+
               mockV3AggregatorBTC = await ethers.getContract("MockV3AggregatorWBTC")
               mockV3AggregatorETH = await ethers.getContract("MockV3AggregatorWETH")
               mockV3AggregatorLINK = await ethers.getContract("MockV3AggregatorLINK")
@@ -26,6 +30,7 @@ const { Contract } = require("ethers")
               mockWBTC = await ethers.getContract("MockWBTC")
               mockWETH = await ethers.getContract("MockWETH")
               mockLINK = await ethers.getContract("MockLINK")
+              randomToken = await ethers.getContract("randomToken")
           })
 
           describe("constructor", function () {
@@ -95,11 +100,24 @@ const { Contract } = require("ethers")
           })
 
           describe("addCollateral", function () {
-              it("successfully adds WETH as allowed collateral", async () => {})
-              it("successfully adds allowed collateral", async () => {
-                  //await mockWBTC.transfer(borrower.address, ethers.utils.)
+              it("successfully adds WETH as allowed collateral", async () => {
+                  await mockWETH.connect(borrowerSigner)._mintToken(borrower, ethers.utils.parseUnits("3"))
+                  await mockWETH.connect(borrowerSigner).approve(goldVault.address, ethers.utils.parseUnits("2"))
+                  //await mockWETH.connect(borrowerSigner).increaseAllowance(borrower, ethers.utils.parseUnits("2"))
+                  await mockWETH
+                      .connect(borrowerSigner)
+                      .increaseAllowance(goldVault.address, ethers.utils.parseUnits("2"))
+
+                  await goldVault.connect(borrowerSigner).addCollateral(mockWETH.address, ethers.utils.parseUnits("2"))
+                  let amountInContract = await goldVault.getCollateralAmountOfTokenOfUser(borrower, mockWETH.address)
+                  let balanceAfter = await mockWETH.balanceOf(borrower)
+                  expect(amountInContract).to.equal(ethers.utils.parseUnits("2"))
+                  expect(ethers.utils.parseUnits("1")).to.equal(balanceAfter)
               })
-              it("reverts when adding not-allowed collateral", async () => {})
+              it("reverts when adding not-allowed collateral", async () => {
+                  expect(await goldVault.addCollateral(randomToken.address, 2)).to.be.reverted()
+              })
+              it("reverts when trying to add a collateral amount the sender does not possess", async () => {})
           })
 
           describe("withdrawCollateral", function () {

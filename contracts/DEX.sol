@@ -115,8 +115,8 @@ contract DEX is Ownable {
         lpAmounts memory poolAmounts = liquidityPoolToAvailableLiquidity[WETH][_token];
         require((poolAmounts.tokenA != 0 && poolAmounts.tokenB != 0), "No liquidity for this pool");
 
-        require(liquidityProviderToLiquidityProvided[msg.sender][WETH] >= _ethAmount, "You have not provided this much liquidity for eth!")
-        require(liquidityProviderToLiquidityProvided[msg.sender][_token] >= _tokenAmount, "You have not provided this much liquidity for token!")
+        require(liquidityProviderToLiquidityProvided[msg.sender][WETH] >= _ethAmount, "You have not provided this much liquidity for eth!");
+        require(liquidityProviderToLiquidityProvided[msg.sender][_token] >= _tokenAmount, "You have not provided this much liquidity for token!");
 
         liquidityPoolToAvailableLiquidity[msg.sender][WETH] = liquidityPoolToAvailableLiquidity[msg.sender][WETH].sub(_ethAmount);
         liquidityPoolToAvailableLiquidity[msg.sender][_token] = liquidityPoolToAvailableLiquidity[msg.sender][_token].sub(_tokenAmount);

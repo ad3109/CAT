@@ -68,6 +68,13 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
             args: [],
         })
 
+        await deploy("randomToken", {
+            contract: "MockToken",
+            from: deployer,
+            log: true,
+            args: ["RAND", "RAND"],
+        })
+
         log("Mocks deployed!")
         log("-----------------------------------------------")
     }

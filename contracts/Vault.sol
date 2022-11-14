@@ -10,7 +10,7 @@ import "hardhat/console.sol";
 
 error Vault__TokenAddressesAndPriceFeedAddressesAmountsDontMatch();
 error Vault__NeedsMoreThanZero();
-error Vault__TokenNotAllowed(address token);
+error Vault__TokenNotAllowed();
 error Vault__TransferFailed();
 error Vault__BreaksHealthFactor();
 error Vault__MintFailed();
@@ -43,7 +43,7 @@ contract Vault is ReentrancyGuard, Ownable {
 
     modifier isAllowedToken(address token) {
         if (s_tokenAddressToPriceFeed[token] == address(0)) {
-            revert Vault__TokenNotAllowed(token);
+            revert Vault__TokenNotAllowed();
         }
         _;
     }
@@ -249,5 +249,9 @@ contract Vault is ReentrancyGuard, Ownable {
 
     function updatePriceFeedAddressOfCat(address newAddress) public onlyOwner {
         s_catPriceFeedAddress = newAddress;
+    }
+
+    function getCollateralAmountOfTokenOfUser(address user, address tokenAddress) public view returns (uint256) {
+        return s_userToTokenAddressToAmountDeposited[user][tokenAddress];
     }
 }
