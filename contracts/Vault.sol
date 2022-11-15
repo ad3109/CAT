@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.7;
+
+//// @title A commodity vault contract
+//// @author Reginald Dewil
+//// @notice deposit collateral and mint/borrow commodity tokens valued according to separate price feed contracts
+//// @dev based on sample stablecoin contract found here https://github.com/smartcontractkit/defi-minimal/blob/main/contracts/stablecoins/exogenousAnchoredCoin/DSCEngine.sol
+////        modified to allow multiple collateral types and multiple price feeds - token to mint also has a price and is not assumed to be worth 1 USD as in stablecoin case
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -14,7 +19,6 @@ error Vault__TokenNotAllowed();
 error Vault__TransferFailed();
 error Vault__BreaksHealthFactor();
 error Vault__MintFailed();
-error Vault__MustBreaksHealthFactor();
 error Vault__HealthFactorOk();
 
 contract Vault is ReentrancyGuard, Ownable {
@@ -114,7 +118,8 @@ contract Vault is ReentrancyGuard, Ownable {
         uint256 amountCollateral,
         address from,
         address to
-    ) private {
+    ) private /*private*/
+    {
         s_userToTokenAddressToAmountDeposited[from][tokenCollateralAddress] -= amountCollateral;
         bool success = IERC20(tokenCollateralAddress).transfer(to, amountCollateral);
         if (!success) {
@@ -132,7 +137,8 @@ contract Vault is ReentrancyGuard, Ownable {
         uint256 amountOfCATToBurn,
         address onBehalfOf,
         address catFrom
-    ) private {
+    ) private /*private*/
+    {
         s_userToCATMinted[onBehalfOf] -= amountOfCATToBurn;
         bool success = i_token.transferFrom(catFrom, address(this), amountOfCATToBurn);
         if (!success) {
