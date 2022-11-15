@@ -1,6 +1,12 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+//// @title  A pricefeed contract using chainlink any-api and being updated every x minutes through chainlink automation (used web interface for this)
+//// @author Reginald Dewil
+//// @dev current setup is to deploy one pricefeed contract per commodity because of timing issues.
+////        In a next iteration a custom job needs to be defined to perform a multi-variable response with multiplication to retrieve decimal values
+////        That approach would be much more gas efficient + less api calls which for most providers also costs $
+
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 
@@ -44,8 +50,11 @@ contract PriceFeed is ChainlinkClient, AggregatorV3Interface {
         string memory path
     ) {
         s_addressesAllowedToModifyPrice[msg.sender] = true;
-        for (uint256 i = 0; i < whiteListedAddresses.length; i++) {
+        for (uint256 i = 0; i < whiteListedAddresses.length; ) {
             s_addressesAllowedToModifyPrice[whiteListedAddresses[i]] = true;
+            unchecked {
+                i++;
+            }
         }
         s_symbol = symbol;
         i_decimals = priceDecimals;

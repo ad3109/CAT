@@ -20,6 +20,7 @@ error Vault__TransferFailed();
 error Vault__BreaksHealthFactor();
 error Vault__MintFailed();
 error Vault__HealthFactorOk();
+error Vault__SeizingTooMuchCollateral();
 
 contract Vault is ReentrancyGuard, Ownable {
     string public s_vaultName;
@@ -117,9 +118,8 @@ contract Vault is ReentrancyGuard, Ownable {
         address tokenCollateralAddress,
         uint256 amountCollateral,
         address from,
-        address to
-    ) private /*private*/
-    {
+        address to /*private*/
+    ) private {
         s_userToTokenAddressToAmountDeposited[from][tokenCollateralAddress] -= amountCollateral;
         bool success = IERC20(tokenCollateralAddress).transfer(to, amountCollateral);
         if (!success) {
@@ -136,15 +136,17 @@ contract Vault is ReentrancyGuard, Ownable {
     function _repayCAT(
         uint256 amountOfCATToBurn,
         address onBehalfOf,
-        address catFrom
-    ) private /*private*/
-    {
-        s_userToCATMinted[onBehalfOf] -= amountOfCATToBurn;
-        bool success = i_token.transferFrom(catFrom, address(this), amountOfCATToBurn);
+        address catFrom /*private*/
+    ) private {
+        uint256 actualAmountToBurn = amountOfCATToBurn > s_userToCATMinted[onBehalfOf]
+            ? s_userToCATMinted[onBehalfOf]
+            : amountOfCATToBurn;
+        s_userToCATMinted[onBehalfOf] -= actualAmountToBurn;
+        bool success = i_token.transferFrom(catFrom, address(this), actualAmountToBurn);
         if (!success) {
             revert Vault__TransferFailed();
         }
-        i_token.burn(amountOfCATToBurn);
+        i_token.burn(actualAmountToBurn);
     }
 
     function mintCAT(uint256 amountOfCATToMint) public moreThanZero(amountOfCATToMint) nonReentrant {
@@ -215,23 +217,26 @@ contract Vault is ReentrancyGuard, Ownable {
     function liquidate(
         address addressOfCollateralToBeSeized,
         address user,
-        uint256 debtToCover
+        uint256 debtToCoverInNumberOfTokens
     ) external {
         uint256 startingUserHealthFactor = calculateHealthFactor(user);
         if (startingUserHealthFactor >= MIN_HEALTH_FACTOR) {
             revert Vault__HealthFactorOk();
         }
-        uint256 tokenAmountFromDebtCovered = getTokenAmountFromUsd(addressOfCollateralToBeSeized, debtToCover);
-        uint256 bonusCollateral = (tokenAmountFromDebtCovered * LIQUIDATION_DISCOUNT) / 100;
+        uint256 usdAmountOfDebtToCover = getUsdValue(address(i_token), debtToCoverInNumberOfTokens);
+        uint256 collateralAmountToSeize = getTokenAmountFromUsd(addressOfCollateralToBeSeized, usdAmountOfDebtToCover);
+        uint256 bonusCollateral = (collateralAmountToSeize * LIQUIDATION_DISCOUNT) / 100;
+
+        if (
+            (collateralAmountToSeize + bonusCollateral) >
+            s_userToTokenAddressToAmountDeposited[user][addressOfCollateralToBeSeized]
+        ) {
+            revert Vault__SeizingTooMuchCollateral();
+        }
         // Burn CAT equal to debtToCover
         // Figure out how much collateral to recover based on how much burnt
-        _withdrawCollateral(
-            addressOfCollateralToBeSeized,
-            tokenAmountFromDebtCovered + bonusCollateral,
-            user,
-            msg.sender
-        );
-        _repayCAT(debtToCover, user, msg.sender);
+        _withdrawCollateral(addressOfCollateralToBeSeized, collateralAmountToSeize + bonusCollateral, user, msg.sender);
+        _repayCAT(debtToCoverInNumberOfTokens, user, msg.sender);
 
         uint256 endingUserHealthFactor = calculateHealthFactor(user);
         require(startingUserHealthFactor < endingUserHealthFactor);
@@ -259,5 +264,9 @@ contract Vault is ReentrancyGuard, Ownable {
 
     function getCollateralAmountOfTokenOfUser(address user, address tokenAddress) public view returns (uint256) {
         return s_userToTokenAddressToAmountDeposited[user][tokenAddress];
+    }
+
+    function getAmountOfTokensMinted(address user) public view returns (uint256) {
+        return s_userToCATMinted[user];
     }
 }

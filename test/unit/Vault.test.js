@@ -3,6 +3,7 @@ const { assert, expect } = require("chai")
 const { developmentChains, initial_answer_prices_mocks } = require("../../helper-hardhat-config")
 const { Contract } = require("ethers")
 const { MockProvider } = require("ethereum-waffle")
+const { hexStripZeros } = require("ethers/lib/utils")
 
 //to run tests: set private functions back to public in Vaul.sol
 
@@ -21,6 +22,7 @@ const { MockProvider } = require("ethereum-waffle")
               borrower = (await getNamedAccounts()).borrower
               liquidator = (await getNamedAccounts()).liquidator
               goldVault = await ethers.getContract("XAU_vault")
+              goldToken = await ethers.getContractAt("CAT", goldVault.getToken())
 
               borrowerSigner = await ethers.getSigner(borrower)
               deployerSigner = await ethers.getSigner(deployer)
@@ -248,6 +250,54 @@ const { MockProvider } = require("ethereum-waffle")
               })
           })
 
+          describe("repayLoan", function () {
+              beforeEach(async () => {
+                  await mockWBTC._mintToken(deployer, ethers.utils.parseUnits("10"))
+                  await mockWBTC.increaseAllowance(goldVault.address, ethers.utils.parseUnits("10"))
+                  await goldVault.addCollateralAndMintCAT(
+                      mockWBTC.address,
+                      ethers.utils.parseUnits("10"),
+                      ethers.utils.parseUnits("3")
+                  )
+                  //about 2.31% LoanToValue
+
+                  await mockWBTC._mintToken(liquidator, ethers.utils.parseUnits("100"))
+                  await mockWBTC
+                      .connect(liquidatorSigner)
+                      .increaseAllowance(goldVault.address, ethers.utils.parseUnits("100"))
+                  await mockWBTC
+                      .connect(liquidatorSigner)
+                      .increaseAllowance(goldVault.address, ethers.utils.parseUnits("100"))
+                  await goldVault
+                      .connect(liquidatorSigner)
+                      .addCollateralAndMintCAT(
+                          mockWBTC.address,
+                          ethers.utils.parseUnits("50"),
+                          ethers.utils.parseUnits("10")
+                      )
+                  await goldToken.increaseAllowance(goldVault.address, ethers.utils.parseUnits("10"))
+                  await goldToken.increaseAllowance(liquidator, ethers.utils.parseUnits("10"))
+              })
+              it("succesfully reduces borrowed amount after repay", async () => {
+                  await goldVault.repayCAT(ethers.utils.parseUnits("2"))
+                  expect(await goldToken.balanceOf(deployer)).to.equal(ethers.utils.parseUnits("1"))
+                  const amountTokensMinted = await goldVault.getAmountOfTokensMinted(deployer)
+                  expect(amountTokensMinted).to.equal(ethers.utils.parseUnits("1"))
+              })
+              it("revert when attempting repay an amount that the repayer does not possess", async () => {
+                  await goldToken.transfer(liquidator, ethers.utils.parseUnits("2")) //current amount of CAT tokens of deployer = 1 (borrowed 3)
+                  await expect(goldVault.repayCAT(ethers.utils.parseUnits("2"))).to.be.reverted
+              })
+              it("only transfer what is required when repaying more than borrowed amount", async () => {
+                  await goldToken.connect(liquidatorSigner).transfer(deployer, ethers.utils.parseUnits("10"))
+                  await goldVault.repayCAT(ethers.utils.parseUnits("13"))
+                  const catTokensBorrowedForUser = await goldVault.getAmountOfTokensMinted(deployer)
+                  const catTokensInWallet = await goldToken.balanceOf(deployer)
+                  expect(catTokensBorrowedForUser).to.equal(ethers.utils.parseUnits("0"))
+                  expect(catTokensInWallet).to.equal(ethers.utils.parseUnits("10"))
+              })
+          })
+
           describe("withdrawing and borrowing", function () {
               beforeEach(async () => {
                   await mockWETH.connect(borrowerSigner)._mintToken(borrower, ethers.utils.parseUnits("3"))
@@ -355,8 +405,8 @@ const { MockProvider } = require("ethereum-waffle")
                   })
               })
 
-              describe("repayLoan", function () {
-                  beforeEach(async () => {
+              describe("repayCATAndWithdrawCollateral", function () {
+                  it("succesfully repays and withdraws collateral", async () => {
                       await mockWBTC._mintToken(deployer, ethers.utils.parseUnits("10"))
                       await mockWBTC.increaseAllowance(goldVault.address, ethers.utils.parseUnits("10"))
                       await goldVault.addCollateralAndMintCAT(
@@ -364,37 +414,88 @@ const { MockProvider } = require("ethereum-waffle")
                           ethers.utils.parseUnits("10"),
                           ethers.utils.parseUnits("3")
                       )
-                      await mockWBTC._mintToken(liquidator, ethers.utils.parseUnits("100"))
-                      await mockWBTC.increaseAllowance(goldVault.address, ethers.utils.parseUnits("100"))
-                      await goldVault.addCollateralAndMintCAT(
+                      await goldToken.increaseAllowance(goldVault.address, ethers.utils.parseUnits("3"))
+                      await goldVault.repayCATAndWithdrawCollateral(
                           mockWBTC.address,
-                          ethers.utils.parseUnits("50", ethers.utils.parseUnits("10"))
+                          ethers.utils.parseUnits("10"),
+                          ethers.utils.parseUnits("3")
                       )
+                      const catTokensInWallet = await goldToken.balanceOf(deployer)
+                      expect(catTokensInWallet).to.equal(ethers.utils.parseUnits("0"))
+                  })
+                  //repay and withdraw tested separately
+              })
+          })
 
-                      await mockWBTC.increaseAllowance(deployer.address, ethers.utils.parseUnits("100"))
-                      //about 2.31% LoanToValue
-                  })
-                  it("succesfully reduces borrowed amount after repay", async () => {
-                      //await goldVault.repayCAT(uint256 amountOfCATToBurn)
-                  })
-                  it("revert when attempting repay with different token", async () => {})
-                  it("refund excess when repaying more than borrowed amount", async () => {})
+          describe("liquidate", function () {
+              beforeEach(async () => {
+                  //borrower needs collateral and create a loan
+                  await mockWETH.connect(borrowerSigner)._mintToken(borrower, ethers.utils.parseUnits("10"))
+                  await mockWETH
+                      .connect(borrowerSigner)
+                      .increaseAllowance(goldVault.address, ethers.utils.parseUnits("10"))
+                  await goldVault
+                      .connect(borrowerSigner)
+                      .addCollateralAndMintCAT(
+                          mockWETH.address,
+                          ethers.utils.parseUnits("10"),
+                          ethers.utils.parseUnits("5")
+                      ) //53.09% LTV
+
+                  //liquidator needs commodity tokens to repay the loan
+                  await mockWBTC.connect(liquidatorSigner)._mintToken(liquidator, ethers.utils.parseUnits("50"))
+                  await mockWBTC
+                      .connect(liquidatorSigner)
+                      .increaseAllowance(goldVault.address, ethers.utils.parseUnits("50"))
+                  await goldVault
+                      .connect(liquidatorSigner)
+                      .addCollateralAndMintCAT(
+                          mockWBTC.address,
+                          ethers.utils.parseUnits("50"),
+                          ethers.utils.parseUnits("100")
+                      )
+                  await goldToken
+                      .connect(liquidatorSigner)
+                      .increaseAllowance(goldVault.address, ethers.utils.parseUnits("100"))
               })
 
-              describe("repayCATAndWithdrawCollateral", function () {
-                  //expect(true).to.equal(false)
+              //function liquidate(        address addressOfCollateralToBeSeized,        address user,        uint256 debtToCover    )
+              it("reverts liquidation attempt if health factor ok", async () => {
+                  await expect(
+                      goldVault
+                          .connect(liquidatorSigner)
+                          .liquidate(mockWETH.address, borrower, ethers.utils.parseUnits("1"))
+                  ).to.be.revertedWith("Vault__HealthFactorOk")
               })
 
-              describe("liquidate", function () {
-                  //   it("liquidates if target's collateral is insufficient for borrow amount", async () => {
-                  //       expect(true).to.equal(false)
-                  //   })
-                  //   it("reverts if liquidation is not allowed for target's collateral and borrow amount", async () => {
-                  //       expect(true).to.equal(false)
-                  //   })
-                  //   it("reverts if liquidation amount is greater than that user's collateral amount of the targeted token", async () => {
-                  //       expect(true).to.equal(false)
-                  //   })
+              describe("distressed borrower", async function () {
+                  beforeEach(async () => {
+                      //if we set the price of the gold tokens to $2179.8, we get a LTV of 70% >66.666% which is liquidation territory
+                      mockV3AggregatorGLD.updateAnswer(ethers.utils.parseUnits("2179.8", 8))
+                  })
+                  it("succeeds liquidation if health factor after < health factor before", async () => {
+                      await goldVault
+                          .connect(liquidatorSigner)
+                          .liquidate(mockWETH.address, borrower, ethers.utils.parseUnits("5"))
+                      //paying off everything => has value of 5*2179.8 = $ 10899
+                      //a 10% markup means that liquidator should seize $ 11988.9
+                      //which is equal to 11988.9/1557 = 7.7 WETH
+
+                      const amountWETHafterLiquidator = await mockWETH.balanceOf(liquidator)
+                      expect(amountWETHafterLiquidator).to.equal(ethers.utils.parseUnits("7.7"))
+                      expect(await goldToken.balanceOf(liquidator)).to.equal(ethers.utils.parseUnits("95"))
+
+                      const [totalCATValueMintedInUsdAfter, collateralValueInUsdAfter] =
+                          await goldVault.getAccountInformation(borrower)
+                      expect(totalCATValueMintedInUsdAfter).to.equal(ethers.utils.parseUnits("0"))
+
+                      //collateralvalueBefore was 10*1557, after seizing: should equal: 3581.1
+                      expect(collateralValueInUsdAfter).to.equal(ethers.utils.parseUnits("3581.1"))
+                  })
+
+                  it("reverts liquidation attempt if liquidator does not have sufficient tokens", async () => {})
+
+                  it("reverts liquidation attempt if liquidator tries to liquidate more tokens than the borrower has deposited", async () => {})
               })
           })
       })

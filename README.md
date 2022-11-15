@@ -1,3 +1,4 @@
-# commodities
+### Commodity Asset Token 
 
-creation of synthetic commodity tokens similar to LINK commodities feeds from raw sources 
+This project takes API commodities feeds and creates ETH backed tokens out of them so they can be traded on a DEX
+
