@@ -473,7 +473,7 @@ const { hexStripZeros } = require("ethers/lib/utils")
                       //if we set the price of the gold tokens to $2179.8, we get a LTV of 70% >66.666% which is liquidation territory
                       mockV3AggregatorGLD.updateAnswer(ethers.utils.parseUnits("2179.8", 8))
                   })
-                  it("succeeds liquidation if health factor after < health factor before", async () => {
+                  it("succeeds in partial liquidation if health factor after < health factor before, single token collateral", async () => {
                       await goldVault
                           .connect(liquidatorSigner)
                           .liquidate(mockWETH.address, borrower, ethers.utils.parseUnits("5"))
@@ -493,9 +493,57 @@ const { hexStripZeros } = require("ethers/lib/utils")
                       expect(collateralValueInUsdAfter).to.equal(ethers.utils.parseUnits("3581.1"))
                   })
 
-                  it("reverts liquidation attempt if liquidator does not have sufficient tokens", async () => {})
+                  it("reverts liquidation attempt if liquidator does not have sufficient tokens", async () => {
+                      await expect(
+                          goldVault
+                              .connect(deployer)
+                              .liquidate(mockWETH.address, borrower, ethers.utils.parseUnits("5"))
+                      ).to.be.reverted
+                  })
 
-                  it("reverts liquidation attempt if liquidator tries to liquidate more tokens than the borrower has deposited", async () => {})
+                  it("reverts liquidation attempt if liquidator tries to liquidate more tokens than the borrower has deposited", async () => {
+                      //if we set the price of the gold tokens to $2179.8, we get a LTV of 70% >66.666% which is liquidation territory
+                      await mockLINK.connect(borrowerSigner)._mintToken(borrower, ethers.utils.parseUnits("1"))
+                      await mockLINK
+                          .connect(borrowerSigner)
+                          .increaseAllowance(goldVault.address, ethers.utils.parseUnits("1"))
+                      await goldVault
+                          .connect(borrowerSigner)
+                          .addCollateral(mockLINK.address, ethers.utils.parseUnits("1"))
+                      await expect(
+                          goldVault
+                              .connect(liquidatorSigner)
+                              .liquidate(mockLINK.address, borrower, ethers.utils.parseUnits("2"))
+                      ).to.be.revertedWith("Vault__SeizingTooMuchCollateral")
+                  })
+
+                  it("succeeds in partial liquidation if health factor after < health factor before, multi token collateral", async () => {
+                      await mockLINK.connect(borrowerSigner)._mintToken(borrower, ethers.utils.parseUnits("1"))
+                      await mockLINK
+                          .connect(borrowerSigner)
+                          .increaseAllowance(goldVault.address, ethers.utils.parseUnits("1"))
+                      await goldVault
+                          .connect(borrowerSigner)
+                          .addCollateral(mockLINK.address, ethers.utils.parseUnits("1"))
+
+                      await goldVault
+                          .connect(liquidatorSigner)
+                          .liquidate(mockWETH.address, borrower, ethers.utils.parseUnits("5"))
+                      //paying off everything => has value of 5*2179.8 = $ 10899
+                      //a 10% markup means that liquidator should seize $ 11988.9
+                      //which is equal to 11988.9/1557 = 7.7 WETH
+
+                      const amountWETHafterLiquidator = await mockWETH.balanceOf(liquidator)
+                      expect(amountWETHafterLiquidator).to.equal(ethers.utils.parseUnits("7.7"))
+                      expect(await goldToken.balanceOf(liquidator)).to.equal(ethers.utils.parseUnits("95"))
+
+                      const [totalCATValueMintedInUsdAfter, collateralValueInUsdAfter] =
+                          await goldVault.getAccountInformation(borrower)
+                      expect(totalCATValueMintedInUsdAfter).to.equal(ethers.utils.parseUnits("0"))
+
+                      //collateralvalueBefore was 10*1557+1*7.5, after seizing: should equal: 3588.6
+                      expect(collateralValueInUsdAfter).to.equal(ethers.utils.parseUnits("3588.6"))
+                  })
               })
           })
       })
