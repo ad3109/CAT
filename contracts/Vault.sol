@@ -61,6 +61,7 @@ contract Vault is ReentrancyGuard, Ownable {
         address[] memory priceFeedsCollateral,
         uint256 collateral_weight
     ) {
+        s_vaultName = name;
         if (allowedCollateralAddresses.length != priceFeedsCollateral.length) {
             revert Vault__TokenAddressesAndPriceFeedAddressesAmountsDontMatch();
         }
@@ -268,5 +269,10 @@ contract Vault is ReentrancyGuard, Ownable {
 
     function getAmountOfTokensMinted(address user) public view returns (uint256) {
         return s_userToCATMinted[user];
+    }
+
+    function addNewCollateralType(address newCollateralAddress, address priceFeedAddress) public onlyOwner {
+        s_collateralTokens.push(newCollateralAddress);
+        s_tokenAddressToPriceFeed[newCollateralAddress] = priceFeedAddress;
     }
 }

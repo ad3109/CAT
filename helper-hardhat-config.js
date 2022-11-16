@@ -6,6 +6,8 @@ const networkConfig = {
     },
     5: {
         name: "goerli",
+        existingCommodities: ["XAU"],
+        newCommodities: ["BRENTOIL", "COAL"],
         pricefeeds: {
             XAU: "0x7b219F57a8e9C7303204Af681e9fA69d17ef626f", //only chainlink commodity pricefeed on goerli
 

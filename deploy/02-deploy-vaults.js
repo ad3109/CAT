@@ -1,6 +1,6 @@
 const { networkConfig, developmentChains } = require("../helper-hardhat-config")
 const { network } = require("hardhat")
-//const { verify } = require("../utils/verify")
+const { verify } = require("../utils/verify")
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy, log } = deployments
@@ -31,33 +31,22 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
             commodityPriceFeedAddresses[commodityName] = COMMODITY_USD_AGGREGATOR.address
         }
 
-        for (let i = 0; i < newCommodities.length; i++) {
-            let commodityName = newCommodities[i]
-            const COMMODITY_USD_AGGREGATOR = await deployments.get(commodityName + "_priceFeed")
-            commodityPriceFeedAddresses[commodityName] = COMMODITY_USD_AGGREGATOR.address
-        }
-
         contractAddress_WBTC = (await deployments.get("MockWBTC")).address
         contractAddress_WETH = (await deployments.get("MockWETH")).address
         contractAddress_LINK = (await deployments.get("MockLINK")).address
     } else {
-        WBTC_USD_PriceFeedAddress = networkConfig[chainId][pricefeeds]["WBTC"]
-        WETH_USD_PriceFeedaddress = networkConfig[chainId][pricefeeds]["WETH"]
-        LINK_USD_PriceFeedAddress = networkConfig[chainId][pricefeeds]["LINK"]
+        WBTC_USD_PriceFeedAddress = networkConfig[chainId]["pricefeeds"]["WBTC"]
+        WETH_USD_PriceFeedaddress = networkConfig[chainId]["pricefeeds"]["WETH"]
+        LINK_USD_PriceFeedAddress = networkConfig[chainId]["pricefeeds"]["LINK"]
 
         for (let i = 0; i < existingCommodities.length; i++) {
             let commodityName = existingCommodities[i]
-            const COMMODITY_USD_AGGREGATOR = networkConfig[chainId][pricefeeds][commodityName]
-            commodityPriceFeedAddresses[commodityName] = COMMODITY_USD_AGGREGATOR.address
+            commodityPriceFeedAddresses[commodityName] = networkConfig[chainId]["pricefeeds"][commodityName]
         }
 
-        for (let i = 0; i < newCommodities.length; i++) {
-            let commodityName = newCommodities[i]
-            commodityPriceFeedAddresses[i] = await deployments.get(commodityName + "_priceFeed").address
-        }
-        contractAddress_WBTC = networkConfig[chainId]["WBTC"]
-        contractAddress_WETH = networkConfig[chainId]["WETH"]
-        contractAddress_LINK = networkConfig[chainId]["LINK"]
+        contractAddress_WBTC = networkConfig[chainId]["tokenContracts"]["WBTC"]
+        contractAddress_WETH = networkConfig[chainId]["tokenContracts"]["WETH"]
+        contractAddress_LINK = networkConfig[chainId]["tokenContracts"]["LINK"]
     }
 
     for (let i = 0; i < newCommodities.length; i++) {
@@ -88,9 +77,9 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         //console.log(`Deployed ${commodityName} vault`)
     }
 
-    // if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-    //     await verify(vault.address, args)
-    // }
+    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+        await verify(vault.address, args)
+    }
 
     log("-------------------------------")
 }

@@ -15,7 +15,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         contractAddress_LINK = (await deployments.get("MockLINK")).address
         oracleAddress = (await deployments.get("MockOracle")).address
     } else {
-        contractAddress_LINK = networkConfig[chainId]["LINK"]
+        contractAddress_LINK = networkConfig[chainId]["tokenContracts"]["LINK"]
         oracleAddress = networkConfig[chainId]["oracleContract"]
     }
 
@@ -33,13 +33,17 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
             apiURLs[commodityName],
             "data,rates," + commodityName,
         ]
-        await deploy(commodityName + "_priceFeed", {
+        const feed = await deploy(commodityName + "_priceFeed", {
             contract: "PriceFeed",
             from: deployer,
             args: args,
             log: true,
         })
         console.log(`Deployed ${commodityName} priceFeed`)
+
+        if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+            await verify(feed.address, args)
+        }
     }
     log("-------------------------------")
 }
