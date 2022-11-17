@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+   <title>xyzToken front-end</title>
+     <script language="javascript" type="text/javascript" src=“xyzToken_abi.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <script language="javascript" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+// Latest: <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+   
+  </head>
+  <body>
+    <div id="txStatus"></div>
+    <div id=“xyzToken”></div>
+
+    <script>
+      var xyzToken;
+      var userAccount;
+      // Infura Goreli Testnet URL & account API Key: 7b0ecb8c16b84909b3d7e00b49d99266 
+      var web3 = new Web3(new Web3.providers.WebsocketProvider("https://goerli.infura.io/v3/7b0ecb8c16b84909b3d7e00b49d99266"));
+      function startApp() {
+        var xyzTokenAddress = "0xc6b1088Ba445A71132fde87A8023Ab9bBFd420e3";
+        xyzToken = new web3js.eth.Contract(xyzTokenABI, xyzTokenAddress);
+	// xyzTokenABI is a var in an associated file: xyzToken_abi.js
+	
+        var accountInterval = setInterval(function() {
+          // Check if account has changed
+          if (web3.eth.accounts[0] !== userAccount) {
+            userAccount = web3.eth.accounts[0];
+            // Call a function to update the UI with the new account
+            getxyzTokenByOwner(userAccount)
+            .then(displayxyzToken);
+          }
+        }, 100);
+      }
+       function displayxyzToken(ids) {
+	$(“#xyzToken”).empty();
+        for (id of ids) {
+          // Look up token details from our contract. Returns an object
+
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+          getxyzTokenDetails(id)
+          .then(function(xyzToken) {
+
+            // inject variables into the HTML.
+            // Append each one to #xyzToken div
+            
+	$(“#xyzToken).append(`<div class=“xyzToken”>
+           <ul>
+                <li>Name: ${xyzToken.name}</li>
+                <li>Data: ${xyzToken.data}</li>
+              </ul>
+             </div>`);
+          });
+        }
+      }
+
+// Add xyzToken contract functions here 
+
+      function getxyzTokenDetails(id) {
+        return getxyzToken.methods.getxyzToken(id).call()
+      }
+
+      function getxyzTokenToOwner(id) {
+        return getxyzToken.methods.zombieToOwner(id).call()
+      }
+
+      function getxyzTokenByOwner(owner) {
+        return getxyzToken.methods.getgetxyzTokenByOwner(owner).call()
+      }
+
+      window.addEventListener('load', function() {
+
+        // Checking if Web3 has been injected by the browser (Mist/MetaMask)
+         // Use Mist/MetaMask's provider
+        if (typeof web3 !== 'undefined') {
+          web3js = new Web3(web3.currentProvider);
+        } else {
+          // Handle the case where the user doesn't have Metamask installed
+        }
+
+        // start the app & access web3 
+        startApp()
+
+      })
+    </script>
