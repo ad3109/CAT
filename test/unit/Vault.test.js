@@ -22,7 +22,7 @@ const { hexStripZeros } = require("ethers/lib/utils")
               borrower = (await getNamedAccounts()).borrower
               liquidator = (await getNamedAccounts()).liquidator
               goldVault = await ethers.getContract("XAU_vault")
-              goldToken = await ethers.getContractAt("CAT", goldVault.getToken())
+              goldToken = await ethers.getContractAt("CAT", goldVault.getTokenAddress())
 
               borrowerSigner = await ethers.getSigner(borrower)
               deployerSigner = await ethers.getSigner(deployer)
@@ -40,7 +40,7 @@ const { hexStripZeros } = require("ethers/lib/utils")
 
           describe("constructor", function () {
               it("creates the CAT", async () => {
-                  const response = await goldVault.getToken()
+                  const response = await goldVault.getTokenAddress()
                   assert.isDefined(response)
               })
 
@@ -72,7 +72,7 @@ const { hexStripZeros } = require("ethers/lib/utils")
                   expect(price.toNumber()).to.equal(ethers.utils.parseUnits("21500", 8))
               })
               it("correctly fetches the USD price of the commodity token", async () => {
-                  let [price] = await goldVault.getPrice(await goldVault.getToken())
+                  let [price] = await goldVault.getPrice(await goldVault.getTokenAddress())
                   expect(price.toNumber()).to.equal(165313848341)
               })
           })
@@ -87,7 +87,7 @@ const { hexStripZeros } = require("ethers/lib/utils")
               it("correctly calculates the USD value of the commodity token", async () => {
                   //3500 USD / 1653.13848341 usd/ounce =
                   let result = await goldVault.getTokenAmountFromUsd(
-                      await goldVault.getToken(),
+                      await goldVault.getTokenAddress(),
                       ethers.utils.parseUnits("3500")
                   )
                   expect(result).to.equal(ethers.utils.parseUnits("2.117185000000967341"))
@@ -122,7 +122,7 @@ const { hexStripZeros } = require("ethers/lib/utils")
 
               it("reverts when trying to add a zero amount of collateral", async () => {
                   await expect(
-                      goldVault.connect(borrowerSigner).addCollateral(mockWETH.address, ethers.utils.parseUnits("00"))
+                      goldVault.connect(borrowerSigner).addCollateral(mockWETH.address, ethers.utils.parseUnits("0"))
                   ).to.be.revertedWith("Vault__NeedsMoreThanZero")
               })
 
@@ -364,7 +364,7 @@ const { hexStripZeros } = require("ethers/lib/utils")
                           .mul(ethers.utils.parseUnits("0.65"))
                           .div(ethers.utils.parseUnits("1"))
                       let catAmountToBorrow = await goldVault.getTokenAmountFromUsd(
-                          await goldVault.getToken(),
+                          await goldVault.getTokenAddress(),
                           usdValueToWithdraw
                       ) //value just below safety level
 

@@ -20,7 +20,7 @@ const { Contract } = require("ethers")
 
           describe("CAT contract creation", function () {
               it("initial supply equal to zero", async () => {
-                  const contractAddress = await goldVault.getToken()
+                  const contractAddress = await goldVault.getTokenAddress()
                   const contract = await ethers.getContractAt("CAT", contractAddress)
                   const supply = await contract.totalSupply()
                   assert(supply, 0)

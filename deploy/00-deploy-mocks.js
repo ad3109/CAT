@@ -48,6 +48,12 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
             log: true,
             args: ["WBTC", "WBTC"],
         })
+        await deploy("MockfWBTC", {
+            contract: "MockToken",
+            from: deployer,
+            log: true,
+            args: ["fWBTC", "fWBTC"],
+        })
         await deploy("MockWETH", {
             contract: "MockToken",
             from: deployer,

@@ -46,8 +46,8 @@ contract Vault is ReentrancyGuard, Ownable {
         _;
     }
 
-    modifier isAllowedToken(address token) {
-        if (s_tokenAddressToPriceFeed[token] == address(0)) {
+    modifier isAllowedToken(address tokenAddress) {
+        if (!isAllowedCollateral(tokenAddress)) {
             revert Vault__TokenNotAllowed();
         }
         _;
@@ -243,11 +243,11 @@ contract Vault is ReentrancyGuard, Ownable {
         require(startingUserHealthFactor < endingUserHealthFactor);
     }
 
-    function getToken() external view returns (address) {
+    function getTokenAddress() external view returns (address) {
         return address(i_token);
     }
 
-    function isAllowedCollateral(address tokenAddress) external view returns (bool) {
+    function isAllowedCollateral(address tokenAddress) public view returns (bool) {
         return uint160(s_tokenAddressToPriceFeed[tokenAddress]) > 0;
     }
 

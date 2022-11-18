@@ -6,19 +6,23 @@ const networkConfig = {
     },
     5: {
         name: "goerli",
-        existingCommodities: ["XAU"],
-        newCommodities: ["BRENTOIL", "COAL"],
+        existingCommodities: ["XAU", "BRENTOIL", "COAL"], //already deployed pricefeeds (chainlink data feeds or aldready deployed by us)
+        newCommodities: ["ETHANOL"],
         pricefeeds: {
             XAU: "0x7b219F57a8e9C7303204Af681e9fA69d17ef626f", //only chainlink commodity pricefeed on goerli
+            BRENTOIL: "0x4b027213045c5F39E25DF2EA4298D85bBd726A8A",
+            COAL: "0x0c408070dd30D43468305d461a5F223DC8D82BfD",
 
             WETH: "0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e",
             WBTC: "0xA39434A63A52E749F02807ae27335515BA4b07F7",
             LINK: "0x48731cF7e84dc94C5f84577882c14Be11a5B7456",
+            fWBTC: "0xA39434A63A52E749F02807ae27335515BA4b07F7",
         },
         tokenContracts: {
             WBTC: "0x8dc14D1c5A273c33E22eFE9647Ec242175A2ad4b",
             LINK: "0x326C977E6efc84E512bB9C30f76E30c160eD06FB",
             WETH: "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
+            fWBTC: "0x1199485d5A23D925964440B1196A45EFccA646E3", //a fake WBTC controlled by us
         },
         oracleContract: "0xcc79157eb46f5624204f47ab42b3906caa40eab7",
     },
